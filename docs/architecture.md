@@ -35,6 +35,22 @@ flowchart TD
 | Desktop app | `desktop/` | Flutter app. It only talks to the REST API: it holds no business logic, no database access and no keys |
 | Demo data | `demo/` | Fictitious invoices, generated with dates relative to today so the demo never looks stale |
 
+## Domain model
+
+Built. `backend/app/domain/models.py` holds the Pydantic models every layer shares.
+
+| Model | Role |
+|---|---|
+| `Extraction` | The fields the LLM returns for one invoice: supplier, invoice number, issue date, net amount, VAT rate, VAT amount, total, currency and a confidence from 0 to 1. Amounts are `Decimal` with two decimals, never floats. Anything that does not fit (a negative total, a currency that is not a three-letter code, a date that is not a date) is rejected |
+| `Invoice` | A stored invoice: the extracted fields plus the file name, the SHA-256 of the file, the status, the reasons for review and whether a human approved it |
+| `InvoiceStatus` | `ok`, `needs_review` or `duplicate` |
+
+`Extraction.amounts_add_up()` checks that net amount plus VAT equals the total, with one cent of tolerance for rounding.
+
+## Settings
+
+Built. `backend/app/core/config.py` reads typed settings from environment variables and the `.env` file at the project root: `DATABASE_URL`, `LLM_PROVIDER`, `LLM_MODEL`, `OPENROUTER_API_KEY` and `DEMO_MODE`. Secrets are `SecretStr`, so they never show in logs.
+
 ## Providers
 
 | Interface | Role | Implementations |
