@@ -56,6 +56,15 @@ class InvoiceRepository:
         stmt = select(InvoiceRecord.id).where(InvoiceRecord.file_hash == file_hash).limit(1)
         return self._session.scalar(stmt) is not None
 
+    def find_by_hash(self, file_hash: str) -> list[Invoice]:
+        """Return the stored invoices whose file has this hash, oldest first."""
+        stmt = (
+            select(InvoiceRecord)
+            .where(InvoiceRecord.file_hash == file_hash)
+            .order_by(InvoiceRecord.id)
+        )
+        return [Invoice.model_validate(record) for record in self._session.scalars(stmt)]
+
     def find_same_number(self, supplier: str, invoice_number: str) -> list[Invoice]:
         """Return the stored invoices of this supplier with this number, ignoring case."""
         stmt = select(InvoiceRecord).where(

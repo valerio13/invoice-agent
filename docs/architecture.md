@@ -25,7 +25,7 @@ flowchart TD
 4. The duplicate check compares supplier and invoice number with what is stored, and the file hash.
 5. The result is stored in PostgreSQL with a status: `ok`, `needs_review` or `duplicate`.
 6. The reviewer opens the app, sees the document next to its fields, corrects them and approves.
-7. The workbook is built from the database on request, one sheet per month with a totals row.
+7. The workbook is built from the database on request, one sheet per month with a totals row. Only invoices with status `ok` are written.
 
 ## Components
 
@@ -73,7 +73,7 @@ Built.
 
 - `app/db/models.py`: the SQLAlchemy 2 table class `InvoiceRecord`.
 - `app/db/session.py`: one shared engine and session factory. `get_session()` yields a session and closes it afterwards.
-- `app/db/repositories.py`: `InvoiceRepository` (`add`, `get`, `list_all`, `has_file`, `find_same_number`, `update`, `delete_all`). It takes and returns domain models, so services never touch tables or SQL. It never commits: the calling service decides when to commit or roll back.
+- `app/db/repositories.py`: `InvoiceRepository` (`add`, `get`, `list_all`, `has_file`, `find_by_hash`, `find_same_number`, `update`, `delete_all`). It takes and returns domain models, so services never touch tables or SQL. It never commits: the calling service decides when to commit or roll back.
 - `migrations/`: Alembic migrations, written by hand. Apply them with `uv run alembic upgrade head`, or print the SQL without connecting with `uv run alembic upgrade head --sql`.
 - A test applies the migrations to an empty database and compares the result with the models, so a column added to one and not to the other fails the build.
 
@@ -93,6 +93,21 @@ Built. Where invoices come from and the model that reads them sit behind two sma
 `InvoiceSource` has no operation other than `fetch`, and a test checks it: the agent cannot move, delete, pay or send anything. `FolderSource` skips links, folders, other file types and files over 10 MB.
 
 A single factory will read the settings and choose the implementation of each interface.
+
+## Services
+
+Built. `backend/app/services/` holds the logic. Services receive their providers and the database session through the constructor, and they are the ones that commit.
+
+| Module | Role |
+|---|---|
+| `checks.py` | The checks made in code on what the model read. `review_reasons()` returns why a human should look: net amount plus VAT is not the total, the VAT amount does not match the rate, the confidence is under 0.8 or the date is in the future. `duplicate_reason()` looks for a stored invoice of the same supplier with the same number. `assess()` runs both and gives the status |
+| `ingest.py` | `IngestService.run()` takes the documents of a source, reads each new one with the model, checks it and stores it, with one commit per document. A file already stored is skipped, so running it twice stores nothing twice. The same bytes under another name are stored as a duplicate without asking the model. A document the model cannot read is reported and not stored |
+| `review.py` | `ReviewService`: `save()` stores the corrected fields, and either the human approves them (the invoice becomes `ok`) or the checks run again. `mark_duplicate()` sets an invoice aside |
+| `export.py` | `build_workbook()` returns the `.xlsx` file: one sheet per month, newest first, with a totals row per currency. Only invoices with status `ok` are written |
+| `metrics.py` | `compute_metrics()` gives the figures of the Overview screen: counts by status, spend of this month and the last one, spend by month and suppliers by spend. Duplicates are left out of the spend |
+| `demo.py` | `reload_demo()` empties the database and ingests the demo set again |
+
+Loaded through these services, the demo set gives 31 invoices that need nothing, 5 to review and 2 duplicates.
 
 ## Demo data
 

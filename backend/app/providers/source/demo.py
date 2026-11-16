@@ -23,10 +23,12 @@ class DemoSource(InvoiceSource):
             for invoice in invoices
             if invoice.copy_of is None
         }
+        # In the order they would have arrived: oldest first, and a copy after its original.
+        arrival = sorted(invoices, key=lambda item: (item.issue_date, item.copy_of is not None))
         return [
             InvoiceFile(
                 file_name=invoice.file_name,
                 content=rendered[invoice.copy_of or invoice.file_name],
             )
-            for invoice in invoices
+            for invoice in arrival
         ]

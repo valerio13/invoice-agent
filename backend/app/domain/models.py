@@ -63,3 +63,7 @@ class Invoice(Extraction):
     review_reasons: list[str] = []
     approved: bool = False
     created_at: datetime
+
+    def extraction(self) -> Extraction:
+        """Only the fields read from the document, without what was stored around them."""
+        return Extraction(**self.model_dump(include=set(Extraction.model_fields)))
