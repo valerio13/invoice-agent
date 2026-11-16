@@ -79,7 +79,7 @@ Built.
 
 ## Settings
 
-Built. `backend/app/core/config.py` reads typed settings from environment variables and the `.env` file at the project root: `DATABASE_URL`, `LLM_PROVIDER`, `LLM_MODEL`, `OPENROUTER_API_KEY` and `DEMO_MODE`. Secrets are `SecretStr`, so they never show in logs.
+Built. `backend/app/core/config.py` reads typed settings from environment variables and the `.env` file at the project root: `DATABASE_URL`, `LLM_PROVIDER`, `LLM_MODEL`, `OPENROUTER_API_KEY`, `DEMO_MODE`, `INVOICE_FOLDER` (the folder read on request) and `FILES_DIR` (where documents are kept, `data/files` by default). Secrets are `SecretStr`, so they never show in logs.
 
 ## Providers
 
@@ -87,12 +87,14 @@ Built. Where invoices come from and the model that reads them sit behind two sma
 
 | Interface | Operations | Implementations |
 |---|---|---|
-| `InvoiceSource` | `fetch()` returns the documents on offer, each an `InvoiceFile` (name, bytes and their SHA-256) | `DemoSource` (draws the demo invoices) and `FolderSource` (reads the PDF, PNG and JPEG files of a folder) |
+| `InvoiceSource` | `fetch()` returns the documents on offer, each an `InvoiceFile` (name, bytes and their SHA-256) | `DemoSource` (draws the demo invoices, oldest first), `FolderSource` (reads the PDF, PNG and JPEG files of a folder) and `UploadSource` (the files dropped on the app) |
 | `LLMProvider` | `extract(file)` returns a validated `Extraction`, or raises `ExtractionError` | `FakeLLMProvider` (knows what each demo invoice says, no key). The real one, a chat model reached through OpenRouter, is not built yet |
 
-`InvoiceSource` has no operation other than `fetch`, and a test checks it: the agent cannot move, delete, pay or send anything. `FolderSource` skips links, folders, other file types and files over 10 MB.
+`InvoiceSource` has no operation other than `fetch`, and a test checks it: the agent cannot move, delete, pay or send anything. Every source takes only PDF, PNG and JPEG files of up to 10 MB (`limits.py`). `FolderSource` also skips links and folders, and `UploadSource` keeps only the last part of a file name, so a name cannot carry a path.
 
-A single factory will read the settings and choose the implementation of each interface.
+`FileStore` (`providers/storage.py`) keeps a copy of each document in `FILES_DIR`, named by its SHA-256, so the review screen can show it. It refuses any name that is not a hash, so a request cannot read a file outside the folder.
+
+`app/factory.py` is the one place that reads the settings and chooses the model, the file store and the folder source. A choice that cannot be met (the OpenRouter model, not built yet, or an empty `INVOICE_FOLDER`) raises `ConfigurationError`, which the API answers with 503 and a sentence that says what to change.
 
 ## Services
 
@@ -108,6 +110,26 @@ Built. `backend/app/services/` holds the logic. Services receive their providers
 | `demo.py` | `reload_demo()` empties the database and ingests the demo set again |
 
 Loaded through these services, the demo set gives 31 invoices that need nothing, 5 to review and 2 duplicates.
+
+## REST API
+
+Built. `app/api/` is a FastAPI app that only translates HTTP to service calls. Run it with `uv run fastapi dev` from `backend/`: it listens on 127.0.0.1 only. The OpenAPI description is at `/openapi.json` and the interactive docs at `/docs`.
+
+| Method and path | Does |
+|---|---|
+| `GET /health` | Status and whether demo mode is on |
+| `GET /invoices?status=` | The invoices, newest first, optionally of one status |
+| `GET /invoices/{id}` | One invoice |
+| `GET /invoices/{id}/document` | The original document, to show it next to its fields |
+| `PUT /invoices/{id}` | Save the reviewer's fields: `{"fields": {...}, "approve": true}` |
+| `POST /invoices/{id}/duplicate` | Set an invoice aside as a duplicate |
+| `POST /ingest/upload` | Read the files dropped on the app (multipart, field `files`) |
+| `POST /ingest/folder` | Read the new invoices of `INVOICE_FOLDER` |
+| `POST /ingest/demo` | Replace every invoice with the demo set. Refused with 403 when demo mode is off |
+| `GET /metrics` | The figures of the Overview screen |
+| `GET /export` | The Excel workbook |
+
+The session, settings, model, file store and clock are FastAPI dependencies (`api/deps.py`), so the tests replace them with an in-memory database, a temporary folder and a fixed date.
 
 ## Demo data
 

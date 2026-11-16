@@ -9,6 +9,7 @@ from app.db.repositories import InvoiceRepository
 from app.domain.models import Extraction, Invoice, InvoiceFile, InvoiceStatus
 from app.providers.llm.base import ExtractionError, LLMProvider
 from app.providers.source.base import InvoiceSource
+from app.providers.storage import FileStore
 from app.services.checks import assess, duplicate_reason, review_reasons
 from app.services.demo import reload_demo
 from app.services.export import build_workbook
@@ -119,8 +120,8 @@ def test_assess_gives_the_status(session: Session) -> None:
 # Ingest
 
 
-def test_ingest_stores_each_invoice_with_its_status(session: Session) -> None:
-    files = [
+def test_ingest_stores_each_invoice_with_its_status(session: Session, files: FileStore) -> None:
+    documents = [
         InvoiceFile(file_name="good.pdf", content=b"1"),
         InvoiceFile(file_name="wrong-total.pdf", content=b"2"),
         InvoiceFile(file_name="resent.pdf", content=b"3"),
@@ -135,7 +136,7 @@ def test_ingest_stores_each_invoice_with_its_status(session: Session) -> None:
         }
     )
 
-    result = IngestService(ListSource(files), llm, session, today).run()
+    result = IngestService(ListSource(documents), llm, session, files, today).run()
 
     assert (result.stored, result.skipped, result.failed) == (4, 0, ["unreadable.pdf"])
     statuses = {i.file_name: i.status for i in InvoiceRepository(session).list_all()}
@@ -147,15 +148,17 @@ def test_ingest_stores_each_invoice_with_its_status(session: Session) -> None:
     }
     # The byte-for-byte copy is never sent to the model.
     assert "copy.pdf" not in llm.calls
+    # Every document is kept for the review screen, the unreadable one too.
+    assert files.load(documents[4].file_hash) == b"4"
 
 
-def test_ingest_twice_stores_nothing_twice(session: Session) -> None:
-    files = [
+def test_ingest_twice_stores_nothing_twice(session: Session, files: FileStore) -> None:
+    documents = [
         InvoiceFile(file_name="good.pdf", content=b"1"),
         InvoiceFile(file_name="copy.pdf", content=b"1"),
     ]
     llm = ScriptedLLM({"good.pdf": make_extraction()})
-    service = IngestService(ListSource(files), llm, session, today)
+    service = IngestService(ListSource(documents), llm, session, files, today)
 
     service.run()
     second = service.run()
@@ -165,8 +168,8 @@ def test_ingest_twice_stores_nothing_twice(session: Session) -> None:
     assert llm.calls == ["good.pdf"]
 
 
-def test_the_demo_set_shows_every_case(session: Session) -> None:
-    result = reload_demo(session, today)
+def test_the_demo_set_shows_every_case(session: Session, files: FileStore) -> None:
+    result = reload_demo(session, files, today)
     repository = InvoiceRepository(session)
 
     assert (result.stored, result.failed) == (38, [])
@@ -181,7 +184,7 @@ def test_the_demo_set_shows_every_case(session: Session) -> None:
     assert len(repository.list_all(InvoiceStatus.OK)) == 31
 
     # Loading it again replaces the data instead of adding to it.
-    reload_demo(session, today)
+    reload_demo(session, files, today)
     assert len(repository.list_all()) == 38
 
 

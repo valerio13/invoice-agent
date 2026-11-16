@@ -10,6 +10,7 @@ from app.db.repositories import InvoiceRepository
 from app.domain.models import InvoiceFile, InvoiceStatus
 from app.providers.llm.base import ExtractionError, LLMProvider
 from app.providers.source.base import InvoiceSource
+from app.providers.storage import FileStore
 from app.services.checks import assess
 
 
@@ -32,9 +33,11 @@ class IngestService:
         source: InvoiceSource,
         llm: LLMProvider,
         session: Session,
+        files: FileStore,
         today: Callable[[], date] = date.today,
     ) -> None:
         self._source = source
+        self._files = files
         self._llm = llm
         self._session = session
         self._repository = InvoiceRepository(session)
@@ -59,6 +62,8 @@ class IngestService:
         same_file = self._repository.find_by_hash(file.file_hash)
         if any(invoice.file_name == file.file_name for invoice in same_file):
             return "skipped"
+        # The document is kept for the review screen, even if the model cannot read it.
+        self._files.save(file)
         if same_file:
             # The same bytes under another name: its fields are known, so the model is not asked.
             original = same_file[0]

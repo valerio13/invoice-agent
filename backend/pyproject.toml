@@ -5,6 +5,7 @@ description = "Invoice agent: reads invoices, flags the doubtful ones for review
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "alembic>=1.14",
+    "fastapi[standard]>=0.163.1",
     "fpdf2>=2.8",
     "openpyxl>=3.1.5",
     "psycopg[binary]>=3.2",
@@ -28,3 +29,6 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.fastapi]
+entrypoint = "app.api.main:app"

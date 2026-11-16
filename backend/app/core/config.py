@@ -7,7 +7,8 @@ from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # config.py -> core -> app -> backend -> project root
-ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+ENV_FILE = PROJECT_ROOT / ".env"
 
 
 class Settings(BaseSettings):
@@ -27,6 +28,10 @@ class Settings(BaseSettings):
     llm_model: str
     openrouter_api_key: SecretStr = SecretStr("")
     demo_mode: bool = True
+    # Folder read by "read folder". Empty means the app only takes files dropped on it.
+    invoice_folder: str = ""
+    # Where a copy of each document is kept, for the review screen. Not versioned.
+    files_dir: Path = PROJECT_ROOT / "data" / "files"
 
 
 @lru_cache
