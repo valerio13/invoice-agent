@@ -1,5 +1,6 @@
 """Domain models shared by every layer: the fields read from an invoice and the stored invoice."""
 
+import hashlib
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
@@ -14,6 +15,20 @@ class InvoiceStatus(StrEnum):
     OK = "ok"
     NEEDS_REVIEW = "needs_review"
     DUPLICATE = "duplicate"
+
+
+class InvoiceFile(BaseModel):
+    """An invoice document as it arrives from a source: its name and its bytes."""
+
+    model_config = ConfigDict(frozen=True)
+
+    file_name: str
+    content: bytes = Field(repr=False)
+
+    @property
+    def file_hash(self) -> str:
+        """SHA-256 of the content, to spot the same document arriving twice."""
+        return hashlib.sha256(self.content).hexdigest()
 
 
 class Extraction(BaseModel):

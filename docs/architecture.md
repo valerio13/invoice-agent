@@ -83,12 +83,27 @@ Built. `backend/app/core/config.py` reads typed settings from environment variab
 
 ## Providers
 
-| Interface | Role | Implementations |
-|---|---|---|
-| `InvoiceSource` | Where invoices come from | Demo set, folder |
-| `LLMProvider` | Turns a document into validated fields | Fake (reads the expected demo data, no key) and a chat model reached through OpenRouter |
+Built. Where invoices come from and the model that reads them sit behind two small interfaces, so the rest of the app never knows which one is behind them.
 
-A single factory reads the settings and chooses the implementation of each interface.
+| Interface | Operations | Implementations |
+|---|---|---|
+| `InvoiceSource` | `fetch()` returns the documents on offer, each an `InvoiceFile` (name, bytes and their SHA-256) | `DemoSource` (draws the demo invoices) and `FolderSource` (reads the PDF, PNG and JPEG files of a folder) |
+| `LLMProvider` | `extract(file)` returns a validated `Extraction`, or raises `ExtractionError` | `FakeLLMProvider` (knows what each demo invoice says, no key). The real one, a chat model reached through OpenRouter, is not built yet |
+
+`InvoiceSource` has no operation other than `fetch`, and a test checks it: the agent cannot move, delete, pay or send anything. `FolderSource` skips links, folders, other file types and files over 10 MB.
+
+A single factory will read the settings and choose the implementation of each interface.
+
+## Demo data
+
+Built. `demo/invoices.json` holds 38 fictitious invoices from 8 invented suppliers, spread over the last six months. Instead of a date each one has `days_ago`, so `load_demo_invoices(today)` (`app/demo/catalog.py`) dates them relative to today and the demo never looks stale. `render_invoice()` (`app/demo/render.py`) draws each one as a one-page PDF with fpdf2, and the same invoice always gives the same bytes.
+
+The set includes, on purpose, the cases the demo shows:
+
+- 3 invoices whose printed total does not equal net amount plus VAT.
+- 2 scanned invoices (a grey, slightly turned sheet), read with a lower confidence.
+- 1 invoice sent twice as two different files (same supplier and number).
+- 1 file that is a byte-for-byte copy of another (same hash).
 
 ## Design rules
 

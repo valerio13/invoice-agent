@@ -1,0 +1,664 @@
+{
+  "suppliers": {
+    "northlake": {
+      "name": "Northlake Paper",
+      "address": "14 Mill Road, Example Town",
+      "color": [
+        66,
+        92,
+        91
+      ],
+      "vat": 21
+    },
+    "brightwave": {
+      "name": "Brightwave Hosting",
+      "address": "22 Example Street, Sample City",
+      "color": [
+        40,
+        90,
+        140
+      ],
+      "vat": 21
+    },
+    "meridian": {
+      "name": "Meridian Freight",
+      "address": "Dock 5, Harbour Avenue, Portville",
+      "color": [
+        120,
+        70,
+        40
+      ],
+      "vat": 10
+    },
+    "cobalt": {
+      "name": "Cobalt Office Supply",
+      "address": "8 Market Square, Example Town",
+      "color": [
+        45,
+        75,
+        150
+      ],
+      "vat": 21
+    },
+    "harbor": {
+      "name": "Harbor Legal Advisors",
+      "address": "3 Court Lane, Sample City",
+      "color": [
+        90,
+        60,
+        110
+      ],
+      "vat": 21
+    },
+    "pinecrest": {
+      "name": "Pinecrest Cleaning",
+      "address": "51 Garden Way, Example Town",
+      "color": [
+        50,
+        120,
+        80
+      ],
+      "vat": 21
+    },
+    "solstice": {
+      "name": "Solstice Energy",
+      "address": "100 Power Road, Portville",
+      "color": [
+        190,
+        130,
+        30
+      ],
+      "vat": 21
+    },
+    "atlas": {
+      "name": "Atlas Software",
+      "address": "77 Byte Boulevard, Sample City",
+      "color": [
+        30,
+        110,
+        120
+      ],
+      "vat": 21
+    }
+  },
+  "invoices": [
+    {
+      "file": "solstice-se0420.pdf",
+      "supplier": "solstice",
+      "number": "SE0420",
+      "days_ago": 7,
+      "lines": [
+        [
+          "Electricity, monthly consumption",
+          "221.62"
+        ]
+      ]
+    },
+    {
+      "file": "northlake-np-0654.pdf",
+      "supplier": "northlake",
+      "number": "NP-0654",
+      "days_ago": 15,
+      "lines": [
+        [
+          "Printed envelopes, 2,000 units",
+          "23.39"
+        ],
+        [
+          "Cardboard archive boxes",
+          "14.05"
+        ]
+      ]
+    },
+    {
+      "file": "harbor-hl-0390.pdf",
+      "supplier": "harbor",
+      "number": "HL-0390",
+      "days_ago": 16,
+      "lines": [
+        [
+          "Contract review, hours",
+          "544.05"
+        ],
+        [
+          "Monthly retainer",
+          "400.00"
+        ],
+        [
+          "Trademark filing",
+          "269.74"
+        ]
+      ],
+      "total_offset": "10.00"
+    },
+    {
+      "file": "solstice-se0402.pdf",
+      "supplier": "solstice",
+      "number": "SE0402",
+      "days_ago": 19,
+      "lines": [
+        [
+          "Electricity, monthly consumption",
+          "318.18"
+        ],
+        [
+          "Meter rental",
+          "6.00"
+        ]
+      ]
+    },
+    {
+      "file": "pinecrest-pc-0853.pdf",
+      "supplier": "pinecrest",
+      "number": "PC-0853",
+      "days_ago": 20,
+      "lines": [
+        [
+          "Office cleaning, monthly",
+          "260.00"
+        ]
+      ]
+    },
+    {
+      "file": "brightwave-bw-0461.pdf",
+      "supplier": "brightwave",
+      "number": "BW-0461",
+      "days_ago": 25,
+      "lines": [
+        [
+          "Cloud hosting plan, monthly",
+          "29.72"
+        ],
+        [
+          "Extra bandwidth",
+          "4.77"
+        ],
+        [
+          "Domain renewal",
+          "3.37"
+        ]
+      ],
+      "scanned": true
+    },
+    {
+      "file": "cobalt-co0364.pdf",
+      "supplier": "cobalt",
+      "number": "CO0364",
+      "days_ago": 26,
+      "lines": [
+        [
+          "Stationery pack",
+          "18.29"
+        ],
+        [
+          "Desk chairs",
+          "156.12"
+        ]
+      ]
+    },
+    {
+      "file": "harbor-hl-0399.pdf",
+      "supplier": "harbor",
+      "number": "HL-0399",
+      "days_ago": 30,
+      "lines": [
+        [
+          "Trademark filing",
+          "227.17"
+        ],
+        [
+          "Monthly retainer",
+          "400.00"
+        ]
+      ]
+    },
+    {
+      "file": "meridian-mf-0718.pdf",
+      "supplier": "meridian",
+      "number": "MF/0718",
+      "days_ago": 33,
+      "lines": [
+        [
+          "Pallet transport, regional",
+          "165.54"
+        ],
+        [
+          "Customs handling",
+          "67.47"
+        ],
+        [
+          "Express delivery surcharge",
+          "42.45"
+        ]
+      ]
+    },
+    {
+      "file": "solstice-se0399.pdf",
+      "supplier": "solstice",
+      "number": "SE0399",
+      "days_ago": 34,
+      "lines": [
+        [
+          "Electricity, monthly consumption",
+          "362.40"
+        ]
+      ]
+    },
+    {
+      "file": "cobalt-co0358.pdf",
+      "supplier": "cobalt",
+      "number": "CO0358",
+      "days_ago": 37,
+      "lines": [
+        [
+          "Desk chairs",
+          "166.19"
+        ],
+        [
+          "Whiteboard markers",
+          "5.04"
+        ]
+      ]
+    },
+    {
+      "file": "pinecrest-pc-0860.pdf",
+      "supplier": "pinecrest",
+      "number": "PC-0860",
+      "days_ago": 38,
+      "lines": [
+        [
+          "Office cleaning, monthly",
+          "260.00"
+        ]
+      ],
+      "total_offset": "-0.90"
+    },
+    {
+      "file": "northlake-np-0658.pdf",
+      "supplier": "northlake",
+      "number": "NP-0658",
+      "days_ago": 41,
+      "lines": [
+        [
+          "Printed envelopes, 2,000 units",
+          "30.02"
+        ]
+      ]
+    },
+    {
+      "file": "northlake-np-0675.pdf",
+      "supplier": "northlake",
+      "number": "NP-0675",
+      "days_ago": 51,
+      "lines": [
+        [
+          "Cardboard archive boxes",
+          "17.54"
+        ],
+        [
+          "Label rolls",
+          "7.22"
+        ],
+        [
+          "Recycled copy paper, 20 boxes",
+          "53.91"
+        ]
+      ]
+    },
+    {
+      "file": "cobalt-co0357.pdf",
+      "supplier": "cobalt",
+      "number": "CO0357",
+      "days_ago": 59,
+      "lines": [
+        [
+          "Desk chairs",
+          "144.78"
+        ]
+      ]
+    },
+    {
+      "file": "pinecrest-pc-0865.pdf",
+      "supplier": "pinecrest",
+      "number": "PC-0865",
+      "days_ago": 66,
+      "lines": [
+        [
+          "Window cleaning",
+          "79.34"
+        ]
+      ]
+    },
+    {
+      "file": "atlas-as-0681.pdf",
+      "supplier": "atlas",
+      "number": "AS-0681",
+      "days_ago": 87,
+      "lines": [
+        [
+          "Project tool, 10 seats",
+          "80.00"
+        ]
+      ]
+    },
+    {
+      "file": "brightwave-bw-0455.pdf",
+      "supplier": "brightwave",
+      "number": "BW-0455",
+      "days_ago": 88,
+      "lines": [
+        [
+          "Domain renewal",
+          "2.72"
+        ],
+        [
+          "Extra bandwidth",
+          "7.66"
+        ],
+        [
+          "Backup storage, 500 GB",
+          "5.00"
+        ]
+      ],
+      "scanned": true
+    },
+    {
+      "file": "northlake-np-0667.pdf",
+      "supplier": "northlake",
+      "number": "NP-0667",
+      "days_ago": 93,
+      "lines": [
+        [
+          "Recycled copy paper, 20 boxes",
+          "48.69"
+        ],
+        [
+          "Cardboard archive boxes",
+          "14.30"
+        ]
+      ]
+    },
+    {
+      "file": "harbor-hl-0402.pdf",
+      "supplier": "harbor",
+      "number": "HL-0402",
+      "days_ago": 97,
+      "lines": [
+        [
+          "Monthly retainer",
+          "400.00"
+        ],
+        [
+          "Trademark filing",
+          "238.78"
+        ]
+      ]
+    },
+    {
+      "file": "cobalt-co0354.pdf",
+      "supplier": "cobalt",
+      "number": "CO0354",
+      "days_ago": 100,
+      "lines": [
+        [
+          "Desk chairs",
+          "185.19"
+        ]
+      ]
+    },
+    {
+      "file": "solstice-se0418.pdf",
+      "supplier": "solstice",
+      "number": "SE0418",
+      "days_ago": 102,
+      "lines": [
+        [
+          "Meter rental",
+          "6.00"
+        ],
+        [
+          "Electricity, monthly consumption",
+          "387.84"
+        ]
+      ]
+    },
+    {
+      "file": "solstice-se0398.pdf",
+      "supplier": "solstice",
+      "number": "SE0398",
+      "days_ago": 108,
+      "lines": [
+        [
+          "Electricity, monthly consumption",
+          "360.56"
+        ]
+      ]
+    },
+    {
+      "file": "northlake-np-0640.pdf",
+      "supplier": "northlake",
+      "number": "NP-0640",
+      "days_ago": 111,
+      "lines": [
+        [
+          "Recycled copy paper, 20 boxes",
+          "41.52"
+        ]
+      ],
+      "total_offset": "100.00"
+    },
+    {
+      "file": "northlake-np-0646.pdf",
+      "supplier": "northlake",
+      "number": "NP-0646",
+      "days_ago": 116,
+      "lines": [
+        [
+          "Label rolls",
+          "10.76"
+        ],
+        [
+          "Printed envelopes, 2,000 units",
+          "32.99"
+        ]
+      ]
+    },
+    {
+      "file": "atlas-as-0684.pdf",
+      "supplier": "atlas",
+      "number": "AS-0684",
+      "days_ago": 118,
+      "lines": [
+        [
+          "Support plan",
+          "56.40"
+        ],
+        [
+          "Accounting suite, 5 seats",
+          "95.00"
+        ]
+      ]
+    },
+    {
+      "file": "pinecrest-pc-0859.pdf",
+      "supplier": "pinecrest",
+      "number": "PC-0859",
+      "days_ago": 121,
+      "lines": [
+        [
+          "Window cleaning",
+          "62.81"
+        ],
+        [
+          "Carpet deep clean",
+          "87.66"
+        ],
+        [
+          "Office cleaning, monthly",
+          "260.00"
+        ]
+      ]
+    },
+    {
+      "file": "harbor-hl-0408.pdf",
+      "supplier": "harbor",
+      "number": "HL-0408",
+      "days_ago": 122,
+      "lines": [
+        [
+          "Trademark filing",
+          "198.89"
+        ],
+        [
+          "Monthly retainer",
+          "400.00"
+        ],
+        [
+          "Contract review, hours",
+          "605.39"
+        ]
+      ]
+    },
+    {
+      "file": "cobalt-co0372.pdf",
+      "supplier": "cobalt",
+      "number": "CO0372",
+      "days_ago": 123,
+      "lines": [
+        [
+          "Stationery pack",
+          "23.37"
+        ]
+      ]
+    },
+    {
+      "file": "pinecrest-pc-0864.pdf",
+      "supplier": "pinecrest",
+      "number": "PC-0864",
+      "days_ago": 126,
+      "lines": [
+        [
+          "Office cleaning, monthly",
+          "260.00"
+        ],
+        [
+          "Carpet deep clean",
+          "96.37"
+        ],
+        [
+          "Window cleaning",
+          "81.20"
+        ]
+      ]
+    },
+    {
+      "file": "meridian-mf-0710.pdf",
+      "supplier": "meridian",
+      "number": "MF/0710",
+      "days_ago": 128,
+      "lines": [
+        [
+          "Express delivery surcharge",
+          "42.18"
+        ]
+      ]
+    },
+    {
+      "file": "harbor-hl-0416.pdf",
+      "supplier": "harbor",
+      "number": "HL-0416",
+      "days_ago": 139,
+      "lines": [
+        [
+          "Contract review, hours",
+          "537.07"
+        ],
+        [
+          "Monthly retainer",
+          "400.00"
+        ],
+        [
+          "Trademark filing",
+          "293.06"
+        ]
+      ]
+    },
+    {
+      "file": "atlas-as-0676.pdf",
+      "supplier": "atlas",
+      "number": "AS-0676",
+      "days_ago": 140,
+      "lines": [
+        [
+          "Onboarding session",
+          "150.00"
+        ]
+      ]
+    },
+    {
+      "file": "solstice-se0411.pdf",
+      "supplier": "solstice",
+      "number": "SE0411",
+      "days_ago": 143,
+      "lines": [
+        [
+          "Meter rental",
+          "6.00"
+        ],
+        [
+          "Electricity, monthly consumption",
+          "329.63"
+        ]
+      ]
+    },
+    {
+      "file": "harbor-hl-0381.pdf",
+      "supplier": "harbor",
+      "number": "HL-0381",
+      "days_ago": 146,
+      "lines": [
+        [
+          "Monthly retainer",
+          "400.00"
+        ]
+      ]
+    },
+    {
+      "file": "northlake-np-0642.pdf",
+      "supplier": "northlake",
+      "number": "NP-0642",
+      "days_ago": 149,
+      "lines": [
+        [
+          "Recycled copy paper, 20 boxes",
+          "61.63"
+        ]
+      ]
+    },
+    {
+      "file": "meridian-mf-0718-resent.pdf",
+      "supplier": "meridian",
+      "number": "MF/0718",
+      "days_ago": 30,
+      "lines": [
+        [
+          "Pallet transport, regional",
+          "165.54"
+        ],
+        [
+          "Customs handling",
+          "67.47"
+        ],
+        [
+          "Express delivery surcharge",
+          "42.45"
+        ]
+      ],
+      "note": "Second copy, sent again on request."
+    },
+    {
+      "file": "cobalt-co0354-copy.pdf",
+      "copy_of": "cobalt-co0354.pdf"
+    }
+  ]
+}
