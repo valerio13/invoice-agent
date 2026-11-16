@@ -2,7 +2,7 @@
 
 Reads invoices (PDF and images), extracts supplier, date, number, net amount, VAT, total and currency, and exports them to an Excel workbook. Invoices it is not sure about, totals that do not add up and duplicates are flagged for a human, who reviews them in a desktop app with the document next to its extracted fields.
 
-Status: in progress. Built so far: the settings and the domain models of the backend, with tests. The rest of the design is the plan and is updated as each part is built.
+Status: in progress. Built so far: the settings, the domain models and the database layer of the backend, with tests. The rest of the design is the plan and is updated as each part is built.
 
 ## Architecture
 
@@ -12,9 +12,20 @@ See [docs/architecture.md](docs/architecture.md).
 
 Python 3.12, FastAPI, Pydantic, LangChain, SQLAlchemy 2, Alembic, PostgreSQL, openpyxl and a Flutter desktop app.
 
+## Database
+
+Requires Docker and [uv](https://docs.astral.sh/uv/).
+
+```bash
+cp .env.example .env            # then fill in the values
+docker compose up -d db         # PostgreSQL on 127.0.0.1:5433
+cd backend && uv sync
+uv run alembic upgrade head     # create the tables
+```
+
 ## Backend checks
 
-Requires [uv](https://docs.astral.sh/uv/).
+The tests use an in-memory database and need no `.env`.
 
 ```bash
 cd backend && uv sync

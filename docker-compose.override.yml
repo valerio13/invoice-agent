@@ -1,0 +1,7 @@
+# Local use only. `docker compose up` loads this file by itself and publishes the database on
+# 127.0.0.1:5433, so the backend can reach it when it runs with uv. Port 5433 and not 5432, so it
+# does not clash with another PostgreSQL on the machine.
+services:
+  db:
+    ports:
+      - "127.0.0.1:5433:5432"

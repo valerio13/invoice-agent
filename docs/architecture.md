@@ -47,6 +47,36 @@ Built. `backend/app/domain/models.py` holds the Pydantic models every layer shar
 
 `Extraction.amounts_add_up()` checks that net amount plus VAT equals the total, with one cent of tolerance for rounding.
 
+## Data model
+
+Built. PostgreSQL holds one table, `invoices`. A duplicate is stored too, with its own status, so the reviewer can see it.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | serial | Primary key |
+| `file_name` | varchar(255) | Name of the file as it arrived |
+| `file_hash` | varchar(64) | SHA-256 of the file, indexed, to spot the same document twice |
+| `supplier`, `invoice_number` | varchar | Indexed together, to find the same number of the same supplier |
+| `issue_date` | date | |
+| `net_amount`, `vat_amount`, `total` | numeric(12, 2) | Exact decimals |
+| `vat_rate` | numeric(5, 2) | Percentage |
+| `currency` | varchar(3) | ISO 4217 code |
+| `confidence` | float | From 0 to 1 |
+| `status` | varchar(20) | `ok`, `needs_review` or `duplicate`, indexed |
+| `review_reasons` | json | Why it needs review, as a list of sentences |
+| `approved` | boolean | True once a human approved it |
+| `created_at` | timestamptz | Set by the database |
+
+## Persistence
+
+Built.
+
+- `app/db/models.py`: the SQLAlchemy 2 table class `InvoiceRecord`.
+- `app/db/session.py`: one shared engine and session factory. `get_session()` yields a session and closes it afterwards.
+- `app/db/repositories.py`: `InvoiceRepository` (`add`, `get`, `list_all`, `has_file`, `find_same_number`, `update`, `delete_all`). It takes and returns domain models, so services never touch tables or SQL. It never commits: the calling service decides when to commit or roll back.
+- `migrations/`: Alembic migrations, written by hand. Apply them with `uv run alembic upgrade head`, or print the SQL without connecting with `uv run alembic upgrade head --sql`.
+- A test applies the migrations to an empty database and compares the result with the models, so a column added to one and not to the other fails the build.
+
 ## Settings
 
 Built. `backend/app/core/config.py` reads typed settings from environment variables and the `.env` file at the project root: `DATABASE_URL`, `LLM_PROVIDER`, `LLM_MODEL`, `OPENROUTER_API_KEY` and `DEMO_MODE`. Secrets are `SecretStr`, so they never show in logs.

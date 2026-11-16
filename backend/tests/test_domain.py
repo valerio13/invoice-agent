@@ -1,25 +1,9 @@
-from datetime import date
 from decimal import Decimal
 
 import pytest
 from pydantic import ValidationError
 
-from app.domain.models import Extraction
-
-
-def make_extraction(**changes: object) -> Extraction:
-    fields: dict[str, object] = {
-        "supplier": "Northlake Paper",
-        "invoice_number": "INV-2026-0412",
-        "issue_date": date(2026, 11, 12),
-        "net_amount": Decimal("1240.00"),
-        "vat_rate": Decimal("21"),
-        "vat_amount": Decimal("260.40"),
-        "total": Decimal("1500.40"),
-        "currency": "EUR",
-        "confidence": 0.97,
-    }
-    return Extraction(**(fields | changes))
+from tests.helpers import make_extraction
 
 
 def test_amounts_add_up() -> None:
