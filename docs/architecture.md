@@ -131,6 +131,20 @@ Built. `app/api/` is a FastAPI app that only translates HTTP to service calls. R
 
 The session, settings, model, file store and clock are FastAPI dependencies (`api/deps.py`), so the tests replace them with an in-memory database, a temporary folder and a fixed date.
 
+## Desktop app
+
+In progress. `desktop/` is a Flutter app, macOS first, that only talks to the REST API (`API_URL`, `http://127.0.0.1:8000` by default).
+
+| Folder | Role |
+|---|---|
+| `lib/theme/` | The design tokens (`tokens.dart`, the same values as the mockups), text styles in Montserrat and the theme |
+| `lib/api/` | `ApiClient`, a small hand-written client over `http`, and the models of the JSON it reads. An error becomes an `ApiException` with the sentence the backend sent, or one that says the backend cannot be reached |
+| `lib/app_state.dart` | `AppState`, a `ChangeNotifier` with what every screen shares: health, demo mode and the figures |
+| `lib/shell/` | The window: page background, the dark sidebar with the brand, navigation and top suppliers, and the selected screen |
+| `lib/screens/` | One file per screen. Built: Overview (figures, spend by month, suppliers of the month and the invoices waiting for review, plus "Load demo" in demo mode). Invoices, Review and Export come next |
+
+The macOS app has the network client permission, so it can reach the backend from its sandbox. The window opens at 1336 x 1000 points, the size of the mockups. The layout adapts down to 1180 x 820 (the sidebar has flexible gaps and the suppliers panel shows only the rows that fit); a smaller window keeps that size and shows scroll bars. Widget tests check four window sizes, so a layout overflow fails the build. Montserrat is fetched by `google_fonts` the first time the app runs. Widget tests use a fake backend (`MockClient`) and the test font.
+
 ## Demo data
 
 Built. `demo/invoices.json` holds 38 fictitious invoices from 8 invented suppliers, spread over the last six months. Instead of a date each one has `days_ago`, so `load_demo_invoices(today)` (`app/demo/catalog.py`) dates them relative to today and the demo never looks stale. `render_invoice()` (`app/demo/render.py`) draws each one as a one-page PDF with fpdf2, and the same invoice always gives the same bytes.
