@@ -41,10 +41,73 @@ const emptyMetricsJson = {
   'top_suppliers': [],
 };
 
+Map<String, Object?> invoiceJson(
+  int id,
+  String supplier,
+  String number,
+  String date,
+  String net,
+  String total, {
+  String status = 'ok',
+  String file = 'invoice.pdf',
+  List<String> reasons = const [],
+}) => {
+  'id': id,
+  'file_name': file,
+  'file_hash': 'h$id',
+  'supplier': supplier,
+  'invoice_number': number,
+  'issue_date': date,
+  'net_amount': net,
+  'vat_rate': '21.00',
+  'vat_amount': '0.00',
+  'total': total,
+  'currency': 'EUR',
+  'confidence': 0.96,
+  'status': status,
+  'review_reasons': reasons,
+  'approved': false,
+  'created_at': '2026-11-16T10:00:00Z',
+};
+
+final invoicesJson = [
+  invoiceJson(1, 'Northlake Paper', 'INV-2026-0412', '2026-11-12', '1240.00', '1500.40'),
+  invoiceJson(
+    2,
+    'Brightwave Hosting',
+    'BW-88217',
+    '2026-11-09',
+    '349.00',
+    '432.29',
+    status: 'needs_review',
+    reasons: ['Net amount plus VAT is 422.29, but the total says 432.29.'],
+  ),
+  invoiceJson(
+    3,
+    'Meridian Freight',
+    'MF/11/0093',
+    '2026-11-05',
+    '2180.00',
+    '2398.00',
+    file: 'mf.png',
+  ),
+  invoiceJson(
+    4,
+    'Northlake Paper',
+    'INV-2026-0412',
+    '2026-10-12',
+    '1240.00',
+    '1500.40',
+    status: 'duplicate',
+    reasons: ['Same supplier and invoice number as northlake.pdf.'],
+  ),
+];
+
 /// A backend that answers from memory. [requests] records what the app asked for.
 MockClient fakeBackend({
   Map<String, Object?> metrics = metricsJson,
   bool demoMode = true,
+  List<Map<String, Object?>>? invoices,
   List<String>? requests,
 }) => MockClient((request) async {
   final key = '${request.method} ${request.url.path}';
@@ -52,6 +115,7 @@ MockClient fakeBackend({
   final body = switch (key) {
     'GET /health' => {'status': 'ok', 'demo_mode': demoMode},
     'GET /metrics' => metrics,
+    'GET /invoices' => invoices ?? invoicesJson,
     'POST /ingest/demo' => {'stored': 38, 'skipped': 0, 'failed': []},
     _ => null,
   };

@@ -24,6 +24,8 @@ abstract final class AppColors {
   // Accent (gold)
   static const accent = Color(0xFFC99C35);
   static const onAccent = Color(0xFFFFFFFF);
+  // Selected ticket: the accent at about 12% on white.
+  static const accentTint = Color(0xFFF8F1E3);
 }
 
 abstract final class AppSizes {

@@ -25,3 +25,16 @@ String? change(double now, double before) {
   final percent = ((now - before) / before * 100).round();
   return '${percent >= 0 ? '+' : ''}$percent%';
 }
+
+final _amount = NumberFormat('#,##0.##', 'en_US');
+final _exact = NumberFormat('#,##0.00', 'en_US');
+
+/// 1,240 or 349.5, without a currency, for the large figures.
+String amount(double value) => _amount.format(value);
+
+/// €1,500.40, or 1,500.40 USD for another currency.
+String moneyExact(double value, String currency) =>
+    currency == 'EUR' ? '€${_exact.format(value)}' : '${_exact.format(value)} $currency';
+
+/// 21%, or 5.5%.
+String percent(double value) => '${_amount.format(value)}%';

@@ -11,6 +11,7 @@ class AppState extends ChangeNotifier {
 
   Health? health;
   Metrics? metrics;
+  List<Invoice> invoices = const [];
   String? error;
   bool busy = false;
 
@@ -19,14 +20,19 @@ class AppState extends ChangeNotifier {
   /// Ask the backend again. Errors are kept in [error] for the screens to show.
   Future<void> refresh() => _run(() async {
     health = await api.health();
-    metrics = await api.metrics();
+    await _reload();
   });
 
   /// Replace every invoice with the demo set, then refresh.
   Future<void> loadDemo() => _run(() async {
     await api.loadDemo();
-    metrics = await api.metrics();
+    await _reload();
   });
+
+  Future<void> _reload() async {
+    metrics = await api.metrics();
+    invoices = await api.invoices();
+  }
 
   Future<void> _run(Future<void> Function() action) async {
     busy = true;

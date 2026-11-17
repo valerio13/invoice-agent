@@ -5,9 +5,10 @@ import '../widgets/cards.dart';
 
 /// A screen that is not built yet.
 class PlaceholderScreen extends StatelessWidget {
-  const PlaceholderScreen({super.key, required this.title});
+  const PlaceholderScreen({super.key, required this.title, this.note});
 
   final String title;
+  final String? note;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -18,7 +19,12 @@ class PlaceholderScreen extends StatelessWidget {
       Expanded(
         child: AppCard(
           radius: 20,
-          child: Center(child: Text('This screen comes in the next step.', style: AppText.body())),
+          child: Center(
+            child: Text(
+              'This screen comes in the next step.${note == null ? '' : ' $note'}',
+              style: AppText.body(),
+            ),
+          ),
         ),
       ),
     ],

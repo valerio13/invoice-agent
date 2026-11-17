@@ -139,11 +139,13 @@ In progress. `desktop/` is a Flutter app, macOS first, that only talks to the RE
 |---|---|
 | `lib/theme/` | The design tokens (`tokens.dart`, the same values as the mockups), text styles in Montserrat and the theme |
 | `lib/api/` | `ApiClient`, a small hand-written client over `http`, and the models of the JSON it reads. An error becomes an `ApiException` with the sentence the backend sent, or one that says the backend cannot be reached |
-| `lib/app_state.dart` | `AppState`, a `ChangeNotifier` with what every screen shares: health, demo mode and the figures |
+| `lib/app_state.dart` | `AppState`, a `ChangeNotifier` with what every screen shares: health, demo mode, the figures and the invoice list |
 | `lib/shell/` | The window: page background, the dark sidebar with the brand, navigation and top suppliers, and the selected screen |
-| `lib/screens/` | One file per screen. Built: Overview (figures, spend by month, suppliers of the month and the invoices waiting for review, plus "Load demo" in demo mode). Invoices, Review and Export come next |
+| `lib/screens/` | One file per screen. Built: Overview (figures, spend by month, suppliers of the month and the invoices waiting for review, plus "Load demo" in demo mode) and Invoices (every invoice as a ticket, filters by dates, supplier, currency, status, number, file type and total, sort by date, a cross on the date, supplier and currency pills to clear them, and the selected invoice with why it needs review in the dark panel). Filters only change what is shown, so they run on screen. Review and Export come next |
 
-The macOS app has the network client permission, so it can reach the backend from its sandbox. The window opens at 1336 x 1000 points, the size of the mockups. The layout adapts down to 1180 x 820 (the sidebar has flexible gaps and the suppliers panel shows only the rows that fit); a smaller window keeps that size and shows scroll bars. Widget tests check four window sizes, so a layout overflow fails the build. Montserrat is fetched by `google_fonts` the first time the app runs. Widget tests use a fake backend (`MockClient`) and the test font.
+The macOS app has the network client permission, so it can reach the backend from its sandbox. The window opens at 1336 x 1000 points, the size of the mockups. The layout adapts down to 1180 x 820 (the sidebar has flexible gaps and the suppliers panel shows only the rows that fit); a smaller window keeps that size and shows scroll bars. Widget tests check four window sizes, so a layout overflow fails the build. Montserrat is fetched by `google_fonts` the first time the app runs. Widget tests use a fake backend (`MockClient`) and the test font. `integration_test/` runs in the real macOS app (`flutter test integration_test -d macos`) and types into the search field and the date picker.
+
+On some macOS installs (older Macs running a patched system) AppKit crashed the app the first time a text field got focus, while loading the font panel favourites. The app never shows the font panel, so `MainFlutterWindow.swift` skips that update (`skipFontPanelUpdates`).
 
 ## Demo data
 

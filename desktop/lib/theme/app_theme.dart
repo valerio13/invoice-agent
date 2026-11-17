@@ -15,6 +15,22 @@ ThemeData buildTheme() {
     ),
     scaffoldBackgroundColor: AppColors.page,
   );
-  if (!useGoogleFonts) return base;
-  return base.copyWith(textTheme: GoogleFonts.montserratTextTheme(base.textTheme));
+  final themed = useGoogleFonts
+      ? base.copyWith(textTheme: GoogleFonts.montserratTextTheme(base.textTheme))
+      : base;
+  // The date picker's large headline is made the size of the app's figures.
+  final headline = (themed.textTheme.headlineSmall ?? const TextStyle()).copyWith(
+    fontSize: AppSizes.fsFigure,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textSoft,
+  );
+  return themed.copyWith(
+    datePickerTheme: DatePickerThemeData(
+      backgroundColor: AppColors.surface,
+      headerHeadlineStyle: headline,
+      rangePickerHeaderHeadlineStyle: headline,
+      rangeSelectionBackgroundColor: AppColors.accentTint,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.rPanel)),
+    ),
+  );
 }

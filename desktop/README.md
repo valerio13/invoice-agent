@@ -16,4 +16,5 @@ flutter run -d macos --dart-define=API_URL=http://127.0.0.1:8000
 
 ```bash
 flutter analyze && flutter test
+flutter test integration_test -d macos   # in the real app
 ```

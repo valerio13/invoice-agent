@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../app_state.dart';
+import '../screens/invoices_screen.dart';
 import '../screens/overview_screen.dart';
 import '../screens/placeholder_screen.dart';
 import '../theme/tokens.dart';
@@ -28,6 +29,8 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _selected = 0;
+  // The invoice the Review screen opens with.
+  int? _reviewId;
 
   @override
   void initState() {
@@ -130,6 +133,18 @@ class _AppShellState extends State<AppShell> {
       state: widget.state,
       onReview: () => _select(2),
       onExport: () => _select(3),
+    ),
+    1 => InvoicesScreen(
+      state: widget.state,
+      onReview: (id) => setState(() {
+        _reviewId = id;
+        _selected = 2;
+      }),
+      onExport: () => _select(3),
+    ),
+    2 => PlaceholderScreen(
+      title: _entries[_selected].label,
+      note: _reviewId == null ? null : 'Invoice $_reviewId will open here.',
     ),
     _ => PlaceholderScreen(title: _entries[_selected].label),
   };

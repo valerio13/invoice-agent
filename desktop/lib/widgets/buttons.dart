@@ -13,12 +13,16 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.kind = ButtonKind.ghost,
     this.icon,
+    this.expand = false,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final ButtonKind kind;
   final IconData? icon;
+
+  /// Fill the width it is given, with the label centred.
+  final bool expand;
 
   @override
   Widget build(BuildContext context) {
@@ -47,9 +51,17 @@ class AppButton extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: padding),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(label.toUpperCase(), style: AppText.button(foreground, fontSize)),
+                  Flexible(
+                    child: Text(
+                      label.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.button(foreground, fontSize),
+                    ),
+                  ),
                   if (icon != null) ...[
                     const SizedBox(width: 10),
                     Icon(icon, size: 14, color: foreground),

@@ -30,10 +30,22 @@ class ApiClient {
 
   Future<Metrics> metrics() async => Metrics.fromJson(await _json('GET', '/metrics'));
 
+  /// Every stored invoice, newest first. Filtering is done on screen.
+  Future<List<Invoice>> invoices() async => [
+    for (final item in await _jsonList('GET', '/invoices'))
+      Invoice.fromJson(item as Map<String, dynamic>),
+  ];
+
   Future<IngestResult> loadDemo() async =>
       IngestResult.fromJson(await _json('POST', '/ingest/demo'));
 
-  Future<Map<String, dynamic>> _json(String method, String path) async {
+  Future<Map<String, dynamic>> _json(String method, String path) async =>
+      await _send(method, path) as Map<String, dynamic>;
+
+  Future<List<dynamic>> _jsonList(String method, String path) async =>
+      await _send(method, path) as List<dynamic>;
+
+  Future<Object?> _send(String method, String path) async {
     final http.Response response;
     try {
       response = await _client
@@ -46,7 +58,7 @@ class ApiClient {
     if (response.statusCode >= 400) {
       throw ApiException(_detail(body) ?? 'The backend answered ${response.statusCode}.');
     }
-    return jsonDecode(body) as Map<String, dynamic>;
+    return jsonDecode(body);
   }
 
   /// The sentence the backend puts in "detail", when there is one.
