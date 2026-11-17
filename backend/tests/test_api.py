@@ -175,6 +175,7 @@ def test_the_openapi_description_lists_every_endpoint(client: TestClient) -> Non
         "/invoices",
         "/invoices/{invoice_id}",
         "/invoices/{invoice_id}/document",
+        "/invoices/{invoice_id}/preview",
         "/invoices/{invoice_id}/duplicate",
         "/ingest/upload",
         "/ingest/folder",
@@ -182,3 +183,21 @@ def test_the_openapi_description_lists_every_endpoint(client: TestClient) -> Non
         "/metrics",
         "/export",
     }
+
+
+def test_preview_draws_the_first_page(demo: TestClient) -> None:
+    invoice = first(demo, "needs_review")
+    response = demo.get(f"/invoices/{invoice['id']}/preview")
+    assert response.headers["content-type"] == "image/png"
+    assert response.content.startswith(b"\x89PNG")
+    assert demo.get("/invoices/9999/preview").status_code == 404
+
+
+def test_doubtful_fields_point_at_what_to_check(demo: TestClient) -> None:
+    to_review = demo.get("/invoices", params={"status": "needs_review"}).json()
+    flagged = {field for invoice in to_review for field in invoice["doubtful_fields"]}
+    assert "total" in flagged
+    assert all(invoice["doubtful_fields"] for invoice in to_review)
+    assert first(demo, "ok")["doubtful_fields"] == []
+    duplicate = first(demo, "duplicate")
+    assert "invoice_number" in duplicate["doubtful_fields"]

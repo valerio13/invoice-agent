@@ -308,3 +308,14 @@ def test_metrics_window_crosses_the_year(session: Session) -> None:
         date(2027, 1, 1),
         date(2027, 2, 1),
     ]
+
+
+def test_doubtful_fields() -> None:
+    from app.services.checks import FIELD_NAMES, doubtful_fields
+
+    ok = InvoiceStatus.OK
+    assert doubtful_fields(make_extraction(), ok, TODAY) == []
+    assert doubtful_fields(make_extraction(total=Decimal("1.00")), ok, TODAY) == ["total"]
+    assert doubtful_fields(make_extraction(), InvoiceStatus.DUPLICATE, TODAY) == ["invoice_number"]
+    assert doubtful_fields(make_extraction(confidence=0.5), ok, TODAY) == list(FIELD_NAMES)
+    assert "confidence" not in FIELD_NAMES

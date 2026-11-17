@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -39,33 +40,67 @@ class ApiClient {
   Future<IngestResult> loadDemo() async =>
       IngestResult.fromJson(await _json('POST', '/ingest/demo'));
 
-  Future<Map<String, dynamic>> _json(String method, String path) async =>
-      await _send(method, path) as Map<String, dynamic>;
+  /// The first page of the document as an image (PNG for a PDF).
+  Future<Uint8List> preview(int invoiceId) async =>
+      (await _request('GET', '/invoices/$invoiceId/preview')).bodyBytes;
+
+  /// Store the reviewer's fields. With [approve] the invoice becomes ok; without it the backend
+  /// checks the new fields again. The backend validates them and says what is wrong.
+  Future<Invoice> review(int invoiceId, InvoiceFields fields, {required bool approve}) async =>
+      Invoice.fromJson(
+        await _json(
+          'PUT',
+          '/invoices/$invoiceId',
+          body: {'fields': fields.toJson(), 'approve': approve},
+        ),
+      );
+
+  Future<Invoice> markDuplicate(int invoiceId) async =>
+      Invoice.fromJson(await _json('POST', '/invoices/$invoiceId/duplicate'));
+
+  Future<Map<String, dynamic>> _json(String method, String path, {Object? body}) async =>
+      jsonDecode(utf8.decode((await _request(method, path, body: body)).bodyBytes))
+          as Map<String, dynamic>;
 
   Future<List<dynamic>> _jsonList(String method, String path) async =>
-      await _send(method, path) as List<dynamic>;
+      jsonDecode(utf8.decode((await _request(method, path)).bodyBytes)) as List<dynamic>;
 
-  Future<Object?> _send(String method, String path) async {
+  Future<http.Response> _request(String method, String path, {Object? body}) async {
+    final request = http.Request(method, _base.resolve(path));
+    if (body != null) {
+      request.headers['content-type'] = 'application/json';
+      request.body = jsonEncode(body);
+    }
     final http.Response response;
     try {
-      response = await _client
-          .send(http.Request(method, _base.resolve(path)))
-          .then(http.Response.fromStream);
+      response = await _client.send(request).then(http.Response.fromStream);
     } on Exception {
       throw ApiException('Cannot reach the backend at $_base. Start it and try again.');
     }
-    final body = utf8.decode(response.bodyBytes);
     if (response.statusCode >= 400) {
-      throw ApiException(_detail(body) ?? 'The backend answered ${response.statusCode}.');
+      final detail = _detail(utf8.decode(response.bodyBytes, allowMalformed: true));
+      throw ApiException(detail ?? 'The backend answered ${response.statusCode}.');
     }
-    return jsonDecode(body);
+    return response;
   }
 
-  /// The sentence the backend puts in "detail", when there is one.
+  /// The sentence the backend puts in "detail". A validation error is a list, one per field.
   static String? _detail(String body) {
     try {
       final detail = (jsonDecode(body) as Map<String, dynamic>)['detail'];
-      return detail is String ? detail : null;
+      if (detail is String) return detail;
+      if (detail is List) {
+        return detail
+            .whereType<Map<String, dynamic>>()
+            .map((error) {
+              final field = (error['loc'] as List?)?.last;
+              return field is String
+                  ? '${fieldLabels[field] ?? field}: ${error['msg']}'
+                  : error['msg'];
+            })
+            .join('\n');
+      }
+      return null;
     } on FormatException {
       return null;
     }

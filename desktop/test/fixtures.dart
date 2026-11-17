@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -51,6 +52,7 @@ Map<String, Object?> invoiceJson(
   String status = 'ok',
   String file = 'invoice.pdf',
   List<String> reasons = const [],
+  List<String> doubtful = const [],
 }) => {
   'id': id,
   'file_name': file,
@@ -67,6 +69,7 @@ Map<String, Object?> invoiceJson(
   'status': status,
   'review_reasons': reasons,
   'approved': false,
+  'doubtful_fields': doubtful,
   'created_at': '2026-11-16T10:00:00Z',
 };
 
@@ -81,6 +84,7 @@ final invoicesJson = [
     '432.29',
     status: 'needs_review',
     reasons: ['Net amount plus VAT is 422.29, but the total says 432.29.'],
+    doubtful: ['total'],
   ),
   invoiceJson(
     3,
@@ -109,16 +113,42 @@ MockClient fakeBackend({
   bool demoMode = true,
   List<Map<String, Object?>>? invoices,
   List<String>? requests,
+  List<Object?>? bodies,
+  String? reviewError,
 }) => MockClient((request) async {
   final key = '${request.method} ${request.url.path}';
   requests?.add(key);
+  if (request.body.isNotEmpty) bodies?.add(jsonDecode(request.body));
+  final list = invoices ?? invoicesJson;
+  final id = int.tryParse(request.url.pathSegments.length > 1 ? request.url.pathSegments[1] : '');
+  if (key.endsWith('/preview')) return http.Response.bytes(onePixelPng, 200);
+  if (request.method == 'PUT' && id != null) {
+    if (reviewError != null) {
+      return http.Response(jsonEncode({'detail': reviewError}), 422);
+    }
+    final invoice = list.firstWhere((item) => item['id'] == id);
+    return http.Response(jsonEncode({...invoice, 'status': 'ok', 'approved': true}), 200);
+  }
+  if (key.endsWith('/duplicate') && id != null) {
+    final invoice = list.firstWhere((item) => item['id'] == id);
+    return http.Response(jsonEncode({...invoice, 'status': 'duplicate'}), 200);
+  }
   final body = switch (key) {
     'GET /health' => {'status': 'ok', 'demo_mode': demoMode},
     'GET /metrics' => metrics,
-    'GET /invoices' => invoices ?? invoicesJson,
+    'GET /invoices' => list,
     'POST /ingest/demo' => {'stored': 38, 'skipped': 0, 'failed': []},
     _ => null,
   };
-  if (body == null) return http.Response(jsonEncode({'detail': 'Not found'}), 404);
+  if (body == null) {
+    return http.Response(jsonEncode({'detail': 'Not found'}), 404);
+  }
   return http.Response(jsonEncode(body), 200, headers: {'content-type': 'application/json'});
 });
+
+/// A valid 1 x 1 PNG, for the document preview.
+final onePixelPng = Uint8List.fromList(
+  base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  ),
+);

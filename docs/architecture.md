@@ -102,25 +102,27 @@ Built. `backend/app/services/` holds the logic. Services receive their providers
 
 | Module | Role |
 |---|---|
-| `checks.py` | The checks made in code on what the model read. `review_reasons()` returns why a human should look: net amount plus VAT is not the total, the VAT amount does not match the rate, the confidence is under 0.8 or the date is in the future. `duplicate_reason()` looks for a stored invoice of the same supplier with the same number. `assess()` runs both and gives the status |
+| `checks.py` | The checks made in code on what the model read. `review_reasons()` returns why a human should look: net amount plus VAT is not the total, the VAT amount does not match the rate, the confidence is under 0.8 or the date is in the future. `duplicate_reason()` looks for a stored invoice of the same supplier with the same number. `assess()` runs both and gives the status. `doubtful_fields()` names the fields the reviewer should look at (the total when it does not add up, the VAT amount, a future date, the number of a duplicate, or all of them when the confidence is low) |
 | `ingest.py` | `IngestService.run()` takes the documents of a source, reads each new one with the model, checks it and stores it, with one commit per document. A file already stored is skipped, so running it twice stores nothing twice. The same bytes under another name are stored as a duplicate without asking the model. A document the model cannot read is reported and not stored |
 | `review.py` | `ReviewService`: `save()` stores the corrected fields, and either the human approves them (the invoice becomes `ok`) or the checks run again. `mark_duplicate()` sets an invoice aside |
 | `export.py` | `build_workbook()` returns the `.xlsx` file: one sheet per month, newest first, with a totals row per currency. Only invoices with status `ok` are written |
 | `metrics.py` | `compute_metrics()` gives the figures of the Overview screen: counts by status, spend of this month and the last one, spend by month and suppliers by spend. Duplicates are left out of the spend |
 | `demo.py` | `reload_demo()` empties the database and ingests the demo set again |
+| `preview.py` | `render_preview()` draws the first page of a PDF as a PNG, so the desktop app only shows images |
 
 Loaded through these services, the demo set gives 31 invoices that need nothing, 5 to review and 2 duplicates.
 
 ## REST API
 
-Built. `app/api/` is a FastAPI app that only translates HTTP to service calls. Run it with `uv run fastapi dev` from `backend/`: it listens on 127.0.0.1 only. The OpenAPI description is at `/openapi.json` and the interactive docs at `/docs`.
+Built. `app/api/` is a FastAPI app that only translates HTTP to service calls. Run it with `uv run fastapi dev` from `backend/`: it listens on 127.0.0.1 only. The OpenAPI description is at `/openapi.json` and the interactive docs at `/docs`. Invoices come back with `doubtful_fields`, computed on each request, so the app can outline them without knowing the rules.
 
 | Method and path | Does |
 |---|---|
 | `GET /health` | Status and whether demo mode is on |
 | `GET /invoices?status=` | The invoices, newest first, optionally of one status |
 | `GET /invoices/{id}` | One invoice |
-| `GET /invoices/{id}/document` | The original document, to show it next to its fields |
+| `GET /invoices/{id}/document` | The original document, as it arrived |
+| `GET /invoices/{id}/preview` | The first page as an image, for the review screen. A PDF is drawn as PNG with PDFium (`pypdfium2`); an image is returned as it is |
 | `PUT /invoices/{id}` | Save the reviewer's fields: `{"fields": {...}, "approve": true}` |
 | `POST /invoices/{id}/duplicate` | Set an invoice aside as a duplicate |
 | `POST /ingest/upload` | Read the files dropped on the app (multipart, field `files`) |
@@ -141,7 +143,7 @@ In progress. `desktop/` is a Flutter app, macOS first, that only talks to the RE
 | `lib/api/` | `ApiClient`, a small hand-written client over `http`, and the models of the JSON it reads. An error becomes an `ApiException` with the sentence the backend sent, or one that says the backend cannot be reached |
 | `lib/app_state.dart` | `AppState`, a `ChangeNotifier` with what every screen shares: health, demo mode, the figures and the invoice list |
 | `lib/shell/` | The window: page background, the dark sidebar with the brand, navigation and top suppliers, and the selected screen |
-| `lib/screens/` | One file per screen. Built: Overview (figures, spend by month, suppliers of the month and the invoices waiting for review, plus "Load demo" in demo mode) and Invoices (every invoice as a ticket, filters by dates, supplier, currency, status, number, file type and total, sort by date, a cross on the date, supplier and currency pills to clear them, and the selected invoice with why it needs review in the dark panel). Filters only change what is shown, so they run on screen. Review and Export come next |
+| `lib/screens/` | One file per screen. Built: Overview (figures, spend by month, suppliers of the month and the invoices waiting for review, plus "Load demo" in demo mode) and Invoices (every invoice as a ticket, filters by dates, supplier, currency, status, number, file type and total, sort by date, a cross on the date, supplier and currency pills to clear them, and the selected invoice with why it needs review in the dark panel). Filters only change what is shown, so they run on screen. Review: the invoices waiting for review one at a time (plus the one opened from Invoices), the first page next to its editable fields with the doubtful ones in gold, previous and next, zoom, "Save and approve" and "Mark as duplicate". The backend validates the fields and its message is shown under the buttons. Export comes next |
 
 The macOS app has the network client permission, so it can reach the backend from its sandbox. The window opens at 1336 x 1000 points, the size of the mockups. The layout adapts down to 1180 x 820 (the sidebar has flexible gaps and the suppliers panel shows only the rows that fit); a smaller window keeps that size and shows scroll bars. Widget tests check four window sizes, so a layout overflow fails the build. Montserrat is fetched by `google_fonts` the first time the app runs. Widget tests use a fake backend (`MockClient`) and the test font. `integration_test/` runs in the real macOS app (`flutter test integration_test -d macos`) and types into the search field and the date picker.
 

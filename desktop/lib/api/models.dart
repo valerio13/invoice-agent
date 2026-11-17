@@ -120,6 +120,7 @@ class Invoice {
     required this.status,
     required this.reviewReasons,
     required this.approved,
+    this.doubtfulFields = const [],
   });
 
   factory Invoice.fromJson(Map<String, dynamic> json) => Invoice(
@@ -137,6 +138,7 @@ class Invoice {
     status: InvoiceStatus.fromJson(json['status'] as String),
     reviewReasons: [for (final reason in json['review_reasons'] as List) reason as String],
     approved: json['approved'] as bool,
+    doubtfulFields: [for (final name in json['doubtful_fields'] as List? ?? []) name as String],
   );
 
   final int id;
@@ -154,5 +156,52 @@ class Invoice {
   final List<String> reviewReasons;
   final bool approved;
 
+  /// Names of the fields the reviewer should look at, as the backend sees them.
+  final List<String> doubtfulFields;
+
   bool get isPdf => fileName.toLowerCase().endsWith('.pdf');
+}
+
+/// How each field is called on screen.
+const fieldLabels = {
+  'supplier': 'Supplier',
+  'invoice_number': 'Number',
+  'issue_date': 'Date',
+  'net_amount': 'Net',
+  'vat_rate': 'VAT %',
+  'vat_amount': 'VAT',
+  'total': 'Total',
+  'currency': 'Currency',
+};
+
+/// The fields of an invoice as the reviewer leaves them. Values are the text typed on screen:
+/// the backend checks them.
+class InvoiceFields {
+  const InvoiceFields(this.values, {required this.confidence});
+
+  factory InvoiceFields.of(Invoice invoice) => InvoiceFields({
+    'supplier': invoice.supplier,
+    'invoice_number': invoice.invoiceNumber,
+    'issue_date': _isoDate(invoice.issueDate),
+    'net_amount': invoice.netAmount.toStringAsFixed(2),
+    'vat_rate': _trim(invoice.vatRate),
+    'vat_amount': invoice.vatAmount.toStringAsFixed(2),
+    'total': invoice.total.toStringAsFixed(2),
+    'currency': invoice.currency,
+  }, confidence: invoice.confidence);
+
+  final Map<String, String> values;
+  final double confidence;
+
+  Map<String, Object?> toJson() => {
+    for (final entry in values.entries) entry.key: entry.value.trim(),
+    'confidence': confidence,
+  };
+
+  static String _isoDate(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+
+  static String _trim(double value) =>
+      value == value.roundToDouble() ? value.toStringAsFixed(0) : value.toString();
 }

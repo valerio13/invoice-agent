@@ -1,5 +1,6 @@
 """REST endpoints. They only translate HTTP to service calls: the logic lives in the services."""
 
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
@@ -12,10 +13,12 @@ from app.db.repositories import InvoiceRepository
 from app.domain.models import Extraction, Invoice, InvoiceStatus
 from app.providers.source.limits import MAX_BYTES, media_type
 from app.providers.source.upload import UploadSource
+from app.services.checks import doubtful_fields
 from app.services.demo import reload_demo
 from app.services.export import build_workbook
 from app.services.ingest import IngestResult, IngestService
 from app.services.metrics import Metrics, compute_metrics
+from app.services.preview import PreviewError, render_preview
 from app.services.review import ReviewService
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -25,6 +28,17 @@ NOT_FOUND = "Invoice not found."
 class Health(BaseModel):
     status: str
     demo_mode: bool
+
+
+class InvoiceView(Invoice):
+    """A stored invoice as the API returns it, with the fields the reviewer should look at."""
+
+    doubtful_fields: list[str]
+
+
+def _view(invoice: Invoice, today: date) -> InvoiceView:
+    fields = doubtful_fields(invoice, invoice.status, today) if not invoice.approved else []
+    return InvoiceView(**invoice.model_dump(), doubtful_fields=fields)
 
 
 class ReviewRequest(BaseModel):
@@ -53,47 +67,69 @@ def health(settings: SettingsDep) -> Health:
 @invoices.get("")
 def list_invoices(
     session: SessionDep,
+    today: TodayDep,
     status_filter: Annotated[InvoiceStatus | None, Query(alias="status")] = None,
-) -> list[Invoice]:
-    return InvoiceRepository(session).list_all(status_filter)
+) -> list[InvoiceView]:
+    return [
+        _view(invoice, today()) for invoice in InvoiceRepository(session).list_all(status_filter)
+    ]
 
 
-@invoices.get("/{invoice_id}")
-def get_invoice(invoice_id: int, session: SessionDep) -> Invoice:
+def _stored(invoice_id: int, session: SessionDep) -> Invoice:
     invoice = InvoiceRepository(session).get(invoice_id)
     if invoice is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, NOT_FOUND)
     return invoice
 
 
-@invoices.get("/{invoice_id}/document")
-def get_document(invoice_id: int, session: SessionDep, files: FilesDep) -> Response:
-    """The original document, to show it next to its fields."""
-    invoice = get_invoice(invoice_id, session)
+def _content(invoice: Invoice, files: FilesDep) -> bytes:
     content = files.load(invoice.file_hash)
     if content is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "The document is no longer kept.")
-    return Response(content, media_type=media_type(invoice.file_name))
+    return content
+
+
+@invoices.get("/{invoice_id}")
+def get_invoice(invoice_id: int, session: SessionDep, today: TodayDep) -> InvoiceView:
+    return _view(_stored(invoice_id, session), today())
+
+
+@invoices.get("/{invoice_id}/document")
+def get_document(invoice_id: int, session: SessionDep, files: FilesDep) -> Response:
+    """The original document, as it arrived."""
+    invoice = _stored(invoice_id, session)
+    return Response(_content(invoice, files), media_type=media_type(invoice.file_name))
+
+
+@invoices.get("/{invoice_id}/preview")
+def get_preview(invoice_id: int, session: SessionDep, files: FilesDep) -> Response:
+    """The first page as an image, to show it next to its fields. A PDF is drawn as PNG."""
+    invoice = _stored(invoice_id, session)
+    try:
+        image, kind = render_preview(_content(invoice, files), invoice.file_name)
+    except PreviewError as error:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from error
+    return Response(image, media_type=kind)
 
 
 @invoices.put("/{invoice_id}")
 def review_invoice(
     invoice_id: int, request: ReviewRequest, session: SessionDep, today: TodayDep
-) -> Invoice:
+) -> InvoiceView:
     invoice = ReviewService(session, today).save(
         invoice_id, request.fields, approve=request.approve
     )
     if invoice is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, NOT_FOUND)
-    return invoice
+    return _view(invoice, today())
 
 
 @invoices.post("/{invoice_id}/duplicate")
-def mark_duplicate(invoice_id: int, session: SessionDep, today: TodayDep) -> Invoice:
+def mark_duplicate(invoice_id: int, session: SessionDep, today: TodayDep) -> InvoiceView:
     invoice = ReviewService(session, today).mark_duplicate(invoice_id)
     if invoice is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, NOT_FOUND)
-    return invoice
+    return _view(invoice, today())
 
 
 @ingest.post("/upload")

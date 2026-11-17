@@ -12,6 +12,8 @@ from app.domain.models import AMOUNT_TOLERANCE, Extraction, InvoiceStatus
 # Below this confidence a human looks at the invoice, even if everything else is fine.
 MIN_CONFIDENCE = 0.8
 CENT = Decimal("0.01")
+# The fields read from an invoice, in the order the review screen shows them.
+FIELD_NAMES = tuple(name for name in Extraction.model_fields if name != "confidence")
 
 
 def review_reasons(extraction: Extraction, today: date) -> list[str]:
@@ -63,3 +65,23 @@ def assess(
     if reasons:
         return InvoiceStatus.NEEDS_REVIEW, reasons
     return InvoiceStatus.OK, []
+
+
+def doubtful_fields(extraction: Extraction, status: InvoiceStatus, today: date) -> list[str]:
+    """Return the names of the fields the reviewer should look at, for the review screen.
+
+    A reading with low confidence makes every field doubtful.
+    """
+    if extraction.confidence < MIN_CONFIDENCE:
+        return list(FIELD_NAMES)
+    fields = []
+    if status == InvoiceStatus.DUPLICATE:
+        fields.append("invoice_number")
+    if extraction.issue_date > today:
+        fields.append("issue_date")
+    expected_vat = (extraction.net_amount * extraction.vat_rate / 100).quantize(CENT, ROUND_HALF_UP)
+    if abs(expected_vat - extraction.vat_amount) > AMOUNT_TOLERANCE:
+        fields.append("vat_amount")
+    if not extraction.amounts_add_up():
+        fields.append("total")
+    return fields

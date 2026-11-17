@@ -29,6 +29,9 @@ class AppState extends ChangeNotifier {
     await _reload();
   });
 
+  /// Reload the figures and the list after a change made on a screen.
+  Future<void> reload() => _run(_reload);
+
   Future<void> _reload() async {
     metrics = await api.metrics();
     invoices = await api.invoices();

@@ -29,3 +29,13 @@ def test_uploads_keep_only_invoices_and_strip_paths() -> None:
     )
     assert [file.file_name for file in source.fetch()] == ["invoice.pdf", "scan.JPG"]
     assert source.rejected == ["notes.txt", "empty.pdf", "big.pdf"]
+
+
+def test_preview_of_an_image_is_the_image_and_a_broken_pdf_is_refused() -> None:
+    import pytest
+
+    from app.services.preview import PreviewError, render_preview
+
+    assert render_preview(b"png-bytes", "scan.png") == (b"png-bytes", "image/png")
+    with pytest.raises(PreviewError):
+        render_preview(b"not a pdf", "broken.pdf")

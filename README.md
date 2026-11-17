@@ -2,7 +2,7 @@
 
 Reads invoices (PDF and images), extracts supplier, date, number, net amount, VAT, total and currency, and exports them to an Excel workbook. Invoices it is not sure about, totals that do not add up and duplicates are flagged for a human, who reviews them in a desktop app with the document next to its extracted fields.
 
-Status: in progress. Built so far: the settings, the domain models, the database layer, the invoice sources, the demo invoices, a stand-in for the model the services (reading, checks, review, Excel export and metrics) the REST API and the first screen of the desktop app, with tests. Still to come: the other screens and the real model. The rest of the design is the plan and is updated as each part is built.
+Status: in progress. Built so far: the settings, the domain models, the database layer, the invoice sources, the demo invoices, a stand-in for the model, the services (reading, checks, review, Excel export and metrics), the REST API and the Overview, Invoices and Review screens of the desktop app, with tests. Still to come: the Export screen, adding files from the app and the real model. The rest of the design is the plan and is updated as each part is built.
 
 ## Architecture
 

@@ -75,7 +75,7 @@ void main() {
 
     await tester.tap(find.widgetWithText(AppButton, 'REVIEW').first);
     await tester.pumpAndSettle();
-    expect(find.textContaining('Invoice 1 will open here.'), findsOneWidget);
+    expect(find.text('REVIEW (1 OF 2)'), findsOneWidget);
   });
 
   for (final size in const [Size(1280, 888), Size(1180, 820), Size(1000, 600)]) {

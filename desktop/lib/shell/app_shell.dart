@@ -4,6 +4,7 @@ import '../app_state.dart';
 import '../screens/invoices_screen.dart';
 import '../screens/overview_screen.dart';
 import '../screens/placeholder_screen.dart';
+import '../screens/review_screen.dart';
 import '../theme/tokens.dart';
 import 'sidebar.dart';
 
@@ -38,7 +39,11 @@ class _AppShellState extends State<AppShell> {
     widget.state.refresh();
   }
 
-  void _select(int index) => setState(() => _selected = index);
+  void _select(int index) => setState(() {
+    _selected = index;
+    // The sidebar opens Review on the first invoice waiting, not the last one picked.
+    if (index == 2) _reviewId = null;
+  });
 
   final _vertical = ScrollController();
   final _horizontal = ScrollController();
@@ -142,10 +147,8 @@ class _AppShellState extends State<AppShell> {
       }),
       onExport: () => _select(3),
     ),
-    2 => PlaceholderScreen(
-      title: _entries[_selected].label,
-      note: _reviewId == null ? null : 'Invoice $_reviewId will open here.',
-    ),
+    // A new key per invoice, so opening another one from Invoices starts the screen afresh.
+    2 => ReviewScreen(key: ValueKey(_reviewId), state: widget.state, initialId: _reviewId),
     _ => PlaceholderScreen(title: _entries[_selected].label),
   };
 }
