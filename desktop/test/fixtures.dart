@@ -107,6 +107,41 @@ final invoicesJson = [
   ),
 ];
 
+const exportSummaryJson = {
+  'file_name': 'invoices-2026-11-18.xlsx',
+  'sheets': [
+    {
+      'name': '2026-11',
+      'month': '2026-11-01',
+      'invoices': 2,
+      'totals': [
+        {'currency': 'EUR', 'net_amount': '3420.00', 'vat_amount': '478.40', 'total': '3898.40'},
+        {'currency': 'USD', 'net_amount': '100.00', 'vat_amount': '0.00', 'total': '100.00'},
+      ],
+    },
+    {
+      'name': '2026-10',
+      'month': '2026-10-01',
+      'invoices': 1,
+      'totals': [
+        {'currency': 'EUR', 'net_amount': '1240.00', 'vat_amount': '260.40', 'total': '1500.40'},
+      ],
+    },
+  ],
+  'needs_review': 1,
+  'duplicates': 1,
+};
+
+const emptyExportSummaryJson = {
+  'file_name': 'invoices-2026-11-18.xlsx',
+  'sheets': [],
+  'needs_review': 0,
+  'duplicates': 0,
+};
+
+/// Stands in for the workbook bytes: the app only passes them on to the disk.
+final workbookBytes = Uint8List.fromList(utf8.encode('xlsx bytes'));
+
 /// A backend that answers from memory. [requests] records what the app asked for.
 MockClient fakeBackend({
   Map<String, Object?> metrics = metricsJson,
@@ -115,10 +150,30 @@ MockClient fakeBackend({
   List<String>? requests,
   List<Object?>? bodies,
   String? reviewError,
+  Map<String, Object?> exportSummary = exportSummaryJson,
+  Map<String, Object?> uploadResult = const {
+    'stored': 2,
+    'skipped': 1,
+    'failed': [],
+    'rejected': [],
+  },
 }) => MockClient((request) async {
   final key = '${request.method} ${request.url.path}';
   requests?.add(key);
-  if (request.body.isNotEmpty) bodies?.add(jsonDecode(request.body));
+  final multipart = request.headers['content-type']?.startsWith('multipart/') ?? false;
+  if (multipart) {
+    // The file names sent, in the order of the form.
+    bodies?.add(RegExp(r'filename="([^"]+)"').allMatches(request.body).map((m) => m[1]).toList());
+  } else if (request.body.isNotEmpty) {
+    bodies?.add(jsonDecode(request.body));
+  }
+  if (key == 'GET /export') {
+    return http.Response.bytes(
+      workbookBytes,
+      200,
+      headers: {'content-disposition': 'attachment; filename="invoices-2026-11-18.xlsx"'},
+    );
+  }
   final list = invoices ?? invoicesJson;
   final id = int.tryParse(request.url.pathSegments.length > 1 ? request.url.pathSegments[1] : '');
   if (key.endsWith('/preview')) return http.Response.bytes(onePixelPng, 200);
@@ -138,6 +193,8 @@ MockClient fakeBackend({
     'GET /metrics' => metrics,
     'GET /invoices' => list,
     'POST /ingest/demo' => {'stored': 38, 'skipped': 0, 'failed': []},
+    'POST /ingest/upload' => uploadResult,
+    'GET /export/summary' => exportSummary,
     _ => null,
   };
   if (body == null) {

@@ -1,6 +1,8 @@
 // The JSON the backend returns, as Dart classes. Amounts arrive as decimal strings and are kept
 // as strings: the app only shows them, it never adds money up.
 
+import 'dart:typed_data';
+
 double _amount(Object? value) => double.parse(value as String);
 
 class Health {
@@ -77,17 +79,121 @@ class Metrics {
 }
 
 class IngestResult {
-  const IngestResult({required this.stored, required this.skipped, required this.failed});
+  const IngestResult({
+    required this.stored,
+    required this.skipped,
+    required this.failed,
+    this.rejected = const [],
+  });
 
   factory IngestResult.fromJson(Map<String, dynamic> json) => IngestResult(
     stored: json['stored'] as int,
     skipped: json['skipped'] as int,
     failed: [for (final name in json['failed'] as List) name as String],
+    rejected: [for (final name in json['rejected'] as List? ?? []) name as String],
   );
 
+  /// Invoices stored in this run, duplicates included.
   final int stored;
+
+  /// Documents that were already stored and were left alone.
   final int skipped;
+
+  /// Documents the model could not read.
   final List<String> failed;
+
+  /// Uploaded files that are not a PDF or an image, are empty or are too large.
+  final List<String> rejected;
+}
+
+/// A file picked or dropped on the app, read into memory to send it to the backend.
+class InvoiceUpload {
+  const InvoiceUpload(this.name, this.bytes);
+
+  final String name;
+  final List<int> bytes;
+}
+
+/// The totals of one currency at the end of a sheet.
+class CurrencyTotal {
+  const CurrencyTotal({
+    required this.currency,
+    required this.netAmount,
+    required this.vatAmount,
+    required this.total,
+  });
+
+  factory CurrencyTotal.fromJson(Map<String, dynamic> json) => CurrencyTotal(
+    currency: json['currency'] as String,
+    netAmount: _amount(json['net_amount']),
+    vatAmount: _amount(json['vat_amount']),
+    total: _amount(json['total']),
+  );
+
+  final String currency;
+  final double netAmount;
+  final double vatAmount;
+  final double total;
+}
+
+/// One sheet of the workbook: the ok invoices of a month.
+class SheetSummary {
+  const SheetSummary({
+    required this.name,
+    required this.month,
+    required this.invoices,
+    required this.totals,
+  });
+
+  factory SheetSummary.fromJson(Map<String, dynamic> json) => SheetSummary(
+    name: json['name'] as String,
+    month: DateTime.parse(json['month'] as String),
+    invoices: json['invoices'] as int,
+    totals: [
+      for (final line in json['totals'] as List)
+        CurrencyTotal.fromJson(line as Map<String, dynamic>),
+    ],
+  );
+
+  final String name;
+  final DateTime month;
+  final int invoices;
+  final List<CurrencyTotal> totals;
+}
+
+/// What the workbook will hold, as the backend sees it, before saving it.
+class ExportSummary {
+  const ExportSummary({
+    required this.fileName,
+    required this.sheets,
+    required this.needsReview,
+    required this.duplicates,
+  });
+
+  factory ExportSummary.fromJson(Map<String, dynamic> json) => ExportSummary(
+    fileName: json['file_name'] as String,
+    sheets: [
+      for (final sheet in json['sheets'] as List)
+        SheetSummary.fromJson(sheet as Map<String, dynamic>),
+    ],
+    needsReview: json['needs_review'] as int,
+    duplicates: json['duplicates'] as int,
+  );
+
+  final String fileName;
+  final List<SheetSummary> sheets;
+  final int needsReview;
+  final int duplicates;
+
+  int get invoices => sheets.fold(0, (sum, sheet) => sum + sheet.invoices);
+}
+
+/// The Excel workbook as the backend built it, with the name it suggests.
+class Workbook {
+  const Workbook(this.fileName, this.bytes);
+
+  final String fileName;
+  final Uint8List bytes;
 }
 
 enum InvoiceStatus {

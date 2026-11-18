@@ -95,3 +95,35 @@ class ListHead extends StatelessWidget {
     ),
   );
 }
+
+/// A label over a figure, on the ink panel.
+class PanelFigure extends StatelessWidget {
+  const PanelFigure({
+    super.key,
+    required this.label,
+    required this.figure,
+    this.color = AppColors.onInk,
+    this.end = false,
+  });
+
+  final String label;
+  final String figure;
+  final Color color;
+  final bool end;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: end ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+    children: [
+      Text(
+        label.toUpperCase(),
+        style: AppText.panelLabel(size: 10).copyWith(fontWeight: FontWeight.w500),
+      ),
+      const SizedBox(height: 9),
+      Text(
+        figure,
+        style: AppText.figure(color: color).copyWith(fontWeight: FontWeight.w500),
+      ),
+    ],
+  );
+}

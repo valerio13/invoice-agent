@@ -10,6 +10,7 @@ import '../widgets/buttons.dart';
 import '../widgets/cards.dart';
 import '../widgets/pills.dart';
 import '../widgets/supplier_icon.dart';
+import '../widgets/ticket.dart';
 
 enum _FileType { any, pdf, image }
 
@@ -20,11 +21,15 @@ class InvoicesScreen extends StatefulWidget {
     required this.state,
     required this.onReview,
     required this.onExport,
+    required this.onAddFiles,
   });
 
   final AppState state;
   final ValueChanged<int> onReview;
   final VoidCallback onExport;
+
+  /// Opens the file dialog. Null while files are being read.
+  final VoidCallback? onAddFiles;
 
   @override
   State<InvoicesScreen> createState() => _InvoicesScreenState();
@@ -104,6 +109,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         ListHead(
           title: 'Invoices (${invoices.length})',
           actions: [
+            AppButton(label: 'Add files', icon: Icons.add_rounded, onPressed: widget.onAddFiles),
             AppButton(
               label: _newestFirst ? 'Newest first' : 'Oldest first',
               icon: Icons.swap_vert_rounded,
@@ -533,8 +539,6 @@ class _Ticket extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onReview;
 
-  static const _notch = 20.0;
-
   @override
   Widget build(BuildContext context) {
     final statusColor = switch (invoice.status) {
@@ -547,13 +551,11 @@ class _Ticket extends StatelessWidget {
       child: Container(
         height: 136,
         padding: const EdgeInsets.only(right: 28),
-        decoration: BoxDecoration(
-          // The selected ticket gets a light gold tint, the one shown in the panel.
-          color: selected ? AppColors.accentTint : AppColors.card,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(first ? AppSizes.rRow : 0),
-            bottom: Radius.circular(last ? AppSizes.rRow : 0),
-          ),
+        // The selected ticket gets a light gold tint, the one shown in the panel.
+        decoration: ticketDecoration(
+          first: first,
+          last: last,
+          color: selected ? AppColors.accentTint : null,
         ),
         child: Row(
           children: [
@@ -632,25 +634,7 @@ class _Ticket extends StatelessWidget {
         ),
       ),
     );
-    if (first) return row;
-    // Where two tickets meet, a half circle of the window colour is cut on each side.
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        row,
-        for (final left in [true, false])
-          Positioned(
-            top: -_notch / 2 - 1,
-            left: left ? -_notch / 2 : null,
-            right: left ? null : -_notch / 2,
-            child: Container(
-              width: _notch,
-              height: _notch,
-              decoration: const BoxDecoration(color: AppColors.surface, shape: BoxShape.circle),
-            ),
-          ),
-      ],
-    );
+    return first ? row : Notched(child: row);
   }
 }
 

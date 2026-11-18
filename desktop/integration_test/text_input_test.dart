@@ -23,7 +23,12 @@ void main() {
         home: Scaffold(
           body: Padding(
             padding: const EdgeInsets.all(24),
-            child: InvoicesScreen(state: state, onReview: (_) {}, onExport: () {}),
+            child: InvoicesScreen(
+              state: state,
+              onReview: (_) {},
+              onExport: () {},
+              onAddFiles: () {},
+            ),
           ),
         ),
       ),

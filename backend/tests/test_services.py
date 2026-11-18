@@ -12,7 +12,7 @@ from app.providers.source.base import InvoiceSource
 from app.providers.storage import FileStore
 from app.services.checks import assess, duplicate_reason, review_reasons
 from app.services.demo import reload_demo
-from app.services.export import build_workbook
+from app.services.export import build_workbook, summarize
 from app.services.ingest import IngestService
 from app.services.metrics import compute_metrics
 from app.services.review import MARKED_DUPLICATE, ReviewService
@@ -256,6 +256,27 @@ def test_workbook_keeps_totals_per_currency(session: Session) -> None:
         ("Total", 1500.4, "EUR"),
         ("Total", 1500.4, "USD"),
     ]
+
+
+def test_summary_lists_the_sheets_and_what_stays_out(session: Session) -> None:
+    store(session, file_name="nov-1.pdf", invoice_number="N1")
+    store(session, file_name="nov-usd.pdf", invoice_number="N2", currency="USD")
+    store(session, file_name="oct.pdf", invoice_number="O1", issue_date=date(2026, 10, 5))
+    store(session, InvoiceStatus.NEEDS_REVIEW, file_name="review.pdf", invoice_number="R1")
+    store(session, InvoiceStatus.DUPLICATE, file_name="dup.pdf", invoice_number="D1")
+
+    summary = summarize(InvoiceRepository(session).list_all(), date(2026, 11, 18))
+
+    assert summary.file_name == "invoices-2026-11-18.xlsx"
+    assert [(sheet.name, sheet.month, sheet.invoices) for sheet in summary.sheets] == [
+        ("2026-11", date(2026, 11, 1), 2),
+        ("2026-10", date(2026, 10, 1), 1),
+    ]
+    assert [(line.currency, line.total) for line in summary.sheets[0].totals] == [
+        ("EUR", Decimal("1500.40")),
+        ("USD", Decimal("1500.40")),
+    ]
+    assert (summary.needs_review, summary.duplicates) == (1, 1)
 
 
 def test_empty_workbook_still_opens() -> None:

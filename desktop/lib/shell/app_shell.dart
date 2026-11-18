@@ -1,11 +1,17 @@
 import 'package:material_ui/material_ui.dart';
 
+import 'package:desktop_drop/desktop_drop.dart';
+
+import '../api/models.dart';
 import '../app_state.dart';
+import '../files.dart';
+import '../screens/export_screen.dart';
 import '../screens/invoices_screen.dart';
 import '../screens/overview_screen.dart';
-import '../screens/placeholder_screen.dart';
 import '../screens/review_screen.dart';
+import '../theme/text.dart';
 import '../theme/tokens.dart';
+import 'drop_zone.dart';
 import 'sidebar.dart';
 
 /// Smallest size the layout is drawn at. A smaller window scrolls.
@@ -20,9 +26,10 @@ const _entries = [
 
 /// The page background, the app window, the sidebar and the selected screen.
 class AppShell extends StatefulWidget {
-  const AppShell({super.key, required this.state});
+  const AppShell({super.key, required this.state, this.files = const FileAccess()});
 
   final AppState state;
+  final FileAccess files;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -44,6 +51,51 @@ class _AppShellState extends State<AppShell> {
     // The sidebar opens Review on the first invoice waiting, not the last one picked.
     if (index == 2) _reviewId = null;
   });
+
+  bool _reading = false;
+
+  Future<void> _pickFiles() async {
+    final uploads = await widget.files.pickInvoices();
+    await _addFiles(uploads);
+  }
+
+  Future<void> _dropFiles(List<DropItem> items) async {
+    final List<InvoiceUpload> uploads;
+    try {
+      uploads = await widget.files.readDropped(items);
+    } on Exception catch (e) {
+      _notify('The dropped files could not be read: $e');
+      return;
+    }
+    await _addFiles(uploads);
+  }
+
+  Future<void> _addFiles(List<InvoiceUpload> uploads) async {
+    if (uploads.isEmpty || _reading) return;
+    setState(() => _reading = true);
+    final count = uploads.length;
+    _notify('Reading $count ${count == 1 ? 'file' : 'files'}…');
+    final result = await widget.state.addFiles(uploads);
+    if (!mounted) return;
+    setState(() => _reading = false);
+    _notify(
+      result == null ? widget.state.error ?? 'The files were not read.' : uploadNotice(result),
+    );
+  }
+
+  void _notify(String message) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        width: 560,
+        backgroundColor: AppColors.ink,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.rRow)),
+        content: Text(message, style: AppText.body(color: AppColors.onInk, size: 12)),
+      ),
+    );
+  }
 
   final _vertical = ScrollController();
   final _horizontal = ScrollController();
@@ -87,7 +139,10 @@ class _AppShellState extends State<AppShell> {
                       child: SizedBox(
                         width: width,
                         height: height,
-                        child: Padding(padding: EdgeInsets.all(margin), child: _window()),
+                        child: Padding(
+                          padding: EdgeInsets.all(margin),
+                          child: DropZone(enabled: !_reading, onDrop: _dropFiles, child: _window()),
+                        ),
                       ),
                     ),
                   ),
@@ -146,10 +201,11 @@ class _AppShellState extends State<AppShell> {
         _selected = 2;
       }),
       onExport: () => _select(3),
+      onAddFiles: _reading ? null : _pickFiles,
     ),
     // A new key per invoice, so opening another one from Invoices starts the screen afresh.
     2 => ReviewScreen(key: ValueKey(_reviewId), state: widget.state, initialId: _reviewId),
-    _ => PlaceholderScreen(title: _entries[_selected].label),
+    _ => ExportScreen(state: widget.state, files: widget.files, onReview: () => _select(2)),
   };
 }
 

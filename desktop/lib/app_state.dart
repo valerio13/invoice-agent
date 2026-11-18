@@ -12,6 +12,7 @@ class AppState extends ChangeNotifier {
   Health? health;
   Metrics? metrics;
   List<Invoice> invoices = const [];
+  ExportSummary? exportSummary;
   String? error;
   bool busy = false;
 
@@ -32,9 +33,20 @@ class AppState extends ChangeNotifier {
   /// Reload the figures and the list after a change made on a screen.
   Future<void> reload() => _run(_reload);
 
+  /// Send files to be read, then refresh. Null when it failed: the reason is in [error].
+  Future<IngestResult?> addFiles(List<InvoiceUpload> files) async {
+    IngestResult? result;
+    await _run(() async {
+      result = await api.upload(files);
+      await _reload();
+    });
+    return result;
+  }
+
   Future<void> _reload() async {
     metrics = await api.metrics();
     invoices = await api.invoices();
+    exportSummary = await api.exportSummary();
   }
 
   Future<void> _run(Future<void> Function() action) async {

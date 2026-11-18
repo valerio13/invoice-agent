@@ -75,3 +75,30 @@ class AppButton extends StatelessWidget {
     );
   }
 }
+
+/// The outlined button on ink, for the second action.
+class LineButton extends StatelessWidget {
+  const LineButton({super.key, required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => Opacity(
+    opacity: onPressed == null ? 0.5 : 1,
+    child: Material(
+      color: Colors.transparent,
+      shape: const StadiumBorder(side: BorderSide(color: Color(0x59FFFFFF), width: 1.5)),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onPressed,
+        child: SizedBox(
+          height: 34,
+          child: Center(
+            child: Text(label.toUpperCase(), style: AppText.button(AppColors.onInk, 9.5)),
+          ),
+        ),
+      ),
+    ),
+  );
+}

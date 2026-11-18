@@ -168,6 +168,16 @@ def test_export(demo: TestClient) -> None:
     assert workbook.sheetnames[0] == "2026-11"
 
 
+def test_export_summary_matches_the_workbook(demo: TestClient) -> None:
+    summary = demo.get("/export/summary").json()
+    workbook = load_workbook(BytesIO(demo.get("/export").content))
+
+    assert summary["file_name"] == "invoices-2026-11-16.xlsx"
+    assert [sheet["name"] for sheet in summary["sheets"]] == workbook.sheetnames
+    assert sum(sheet["invoices"] for sheet in summary["sheets"]) == 31
+    assert (summary["needs_review"], summary["duplicates"]) == (5, 2)
+
+
 def test_the_openapi_description_lists_every_endpoint(client: TestClient) -> None:
     paths = set(client.get("/openapi.json").json()["paths"])
     assert paths == {
@@ -182,6 +192,7 @@ def test_the_openapi_description_lists_every_endpoint(client: TestClient) -> Non
         "/ingest/demo",
         "/metrics",
         "/export",
+        "/export/summary",
     }
 
 

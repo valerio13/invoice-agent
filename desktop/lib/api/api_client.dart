@@ -58,6 +58,30 @@ class ApiClient {
   Future<Invoice> markDuplicate(int invoiceId) async =>
       Invoice.fromJson(await _json('POST', '/invoices/$invoiceId/duplicate'));
 
+  /// Send dropped or picked files to be read. The backend says what it stored and left out.
+  Future<IngestResult> upload(List<InvoiceUpload> files) async {
+    final request = http.MultipartRequest('POST', _base.resolve('/ingest/upload'));
+    request.files.addAll([
+      for (final file in files)
+        http.MultipartFile.fromBytes('files', file.bytes, filename: file.name),
+    ]);
+    final response = await _send(request);
+    return IngestResult.fromJson(
+      jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
+    );
+  }
+
+  Future<ExportSummary> exportSummary() async =>
+      ExportSummary.fromJson(await _json('GET', '/export/summary'));
+
+  /// The workbook, built from the database at the moment of the request.
+  Future<Workbook> export() async {
+    final response = await _request('GET', '/export');
+    final disposition = response.headers['content-disposition'] ?? '';
+    final name = RegExp(r'filename="([^"/\\]+)"').firstMatch(disposition)?.group(1);
+    return Workbook(name ?? 'invoices.xlsx', response.bodyBytes);
+  }
+
   Future<Map<String, dynamic>> _json(String method, String path, {Object? body}) async =>
       jsonDecode(utf8.decode((await _request(method, path, body: body)).bodyBytes))
           as Map<String, dynamic>;
@@ -71,6 +95,10 @@ class ApiClient {
       request.headers['content-type'] = 'application/json';
       request.body = jsonEncode(body);
     }
+    return _send(request);
+  }
+
+  Future<http.Response> _send(http.BaseRequest request) async {
     final http.Response response;
     try {
       response = await _client.send(request).then(http.Response.fromStream);

@@ -15,7 +15,7 @@ from app.providers.source.limits import MAX_BYTES, media_type
 from app.providers.source.upload import UploadSource
 from app.services.checks import doubtful_fields
 from app.services.demo import reload_demo
-from app.services.export import build_workbook
+from app.services.export import ExportSummary, build_workbook, summarize, workbook_name
 from app.services.ingest import IngestResult, IngestService
 from app.services.metrics import Metrics, compute_metrics
 from app.services.preview import PreviewError, render_preview
@@ -173,11 +173,17 @@ def metrics(session: SessionDep, today: TodayDep) -> Metrics:
     return compute_metrics(InvoiceRepository(session).list_all(), today())
 
 
+@reports.get("/export/summary")
+def export_summary(session: SessionDep, today: TodayDep) -> ExportSummary:
+    """What the workbook will hold: its sheets with their totals, and what stays out."""
+    return summarize(InvoiceRepository(session).list_all(), today())
+
+
 @reports.get("/export")
 def export(session: SessionDep, today: TodayDep) -> Response:
     """The Excel workbook, rebuilt from the database on every request."""
     content = build_workbook(InvoiceRepository(session).list_all())
-    name = f"invoices-{today().isoformat()}.xlsx"
+    name = workbook_name(today())
     return Response(
         content, media_type=XLSX, headers={"Content-Disposition": f'attachment; filename="{name}"'}
     )

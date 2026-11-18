@@ -337,13 +337,13 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Flexible(
-                          child: _PanelFigure(
+                          child: PanelFigure(
                             label: 'Read by the model',
                             figure: '${fieldLabels.length} fields',
                           ),
                         ),
                         const SizedBox(width: 12),
-                        _PanelFigure(
+                        PanelFigure(
                           label: 'To check',
                           figure: '${doubtful.length}',
                           color: doubtful.isEmpty ? AppColors.onInk : AppColors.accent,
@@ -388,7 +388,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         ),
                 ),
                 const SizedBox(height: 10),
-                _LineButton(
+                LineButton(
                   label: 'Mark as duplicate',
                   onPressed: _saving || invoice.status == InvoiceStatus.duplicate
                       ? null
@@ -434,36 +434,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
       ],
     );
   }
-}
-
-class _PanelFigure extends StatelessWidget {
-  const _PanelFigure({
-    required this.label,
-    required this.figure,
-    this.color = AppColors.onInk,
-    this.end = false,
-  });
-
-  final String label;
-  final String figure;
-  final Color color;
-  final bool end;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: end ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-    children: [
-      Text(
-        label.toUpperCase(),
-        style: AppText.panelLabel(size: 10).copyWith(fontWeight: FontWeight.w500),
-      ),
-      const SizedBox(height: 9),
-      Text(
-        figure,
-        style: AppText.figure(color: color).copyWith(fontWeight: FontWeight.w500),
-      ),
-    ],
-  );
 }
 
 /// A labelled field on ink. A doubtful one has a gold label and outline.
@@ -514,33 +484,6 @@ class _Field extends StatelessWidget {
           ),
         ),
       ],
-    ),
-  );
-}
-
-/// The outlined button on ink, for the second action.
-class _LineButton extends StatelessWidget {
-  const _LineButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) => Opacity(
-    opacity: onPressed == null ? 0.5 : 1,
-    child: Material(
-      color: Colors.transparent,
-      shape: const StadiumBorder(side: BorderSide(color: Color(0x59FFFFFF), width: 1.5)),
-      child: InkWell(
-        customBorder: const StadiumBorder(),
-        onTap: onPressed,
-        child: SizedBox(
-          height: 34,
-          child: Center(
-            child: Text(label.toUpperCase(), style: AppText.button(AppColors.onInk, 9.5)),
-          ),
-        ),
-      ),
     ),
   );
 }

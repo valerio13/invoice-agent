@@ -67,14 +67,18 @@ void main() {
     for (final empty in [false, true]) {
       testWidgets('fits a window of ${size.width.toInt()} x ${size.height.toInt()}'
           '${empty ? ' with no invoices' : ''}', (tester) async {
-        final client = fakeBackend(metrics: empty ? emptyMetricsJson : metricsJson);
+        final client = fakeBackend(
+          metrics: empty ? emptyMetricsJson : metricsJson,
+          invoices: empty ? const [] : null,
+          exportSummary: empty ? emptyExportSummaryJson : exportSummaryJson,
+        );
         final state = AppState(ApiClient(client: client, baseUrl: 'http://test'));
         await pumpApp(tester, state, size: size);
 
         expect(find.text('OVERVIEW'), findsOneWidget);
         await tester.tap(find.text('EXPORT'));
         await tester.pumpAndSettle();
-        expect(find.text('This screen comes in the next step.'), findsOneWidget);
+        expect(find.text(empty ? 'SHEETS (0)' : 'SHEETS (2)'), findsOneWidget);
       });
     }
   }
