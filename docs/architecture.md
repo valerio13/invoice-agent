@@ -88,13 +88,13 @@ Built. Where invoices come from and the model that reads them sit behind two sma
 | Interface | Operations | Implementations |
 |---|---|---|
 | `InvoiceSource` | `fetch()` returns the documents on offer, each an `InvoiceFile` (name, bytes and their SHA-256) | `DemoSource` (draws the demo invoices, oldest first), `FolderSource` (reads the PDF, PNG and JPEG files of a folder) and `UploadSource` (the files dropped on the app) |
-| `LLMProvider` | `extract(file)` returns a validated `Extraction`, or raises `ExtractionError` | `FakeLLMProvider` (knows what each demo and extra invoice says, no key). The real one, a chat model reached through OpenRouter, is not built yet |
+| `LLMProvider` | `extract(file)` returns a validated `Extraction`, or raises `ExtractionError` | `FakeLLMProvider` (knows what each demo and extra invoice says, no key). `LangChainLLMProvider` (`openrouter.py`): a chat model reached through OpenRouter with `langchain-openrouter`, so changing the model is changing `LLM_MODEL`. A PDF goes as a base64 file part and an image as a base64 image part. The answer is constrained with a JSON schema (`ModelAnswer`, which also says whether the document is an invoice at all), amounts are rounded to cents and it is validated as an `Extraction`. The printed total is copied as it is, never corrected. A model error, an answer that does not validate or a document that is not an invoice raise `ExtractionError`, so the file is reported as not read |
 
 `InvoiceSource` has no operation other than `fetch`, and a test checks it: the agent cannot move, delete, pay or send anything. Every source takes only PDF, PNG and JPEG files of up to 10 MB (`limits.py`). `FolderSource` also skips links and folders, and `UploadSource` keeps only the last part of a file name, so a name cannot carry a path.
 
 `FileStore` (`providers/storage.py`) keeps a copy of each document in `FILES_DIR`, named by its SHA-256, so the review screen can show it. It refuses any name that is not a hash, so a request cannot read a file outside the folder.
 
-`app/factory.py` is the one place that reads the settings and chooses the model, the file store and the folder source. A choice that cannot be met (the OpenRouter model, not built yet, or an empty `INVOICE_FOLDER`) raises `ConfigurationError`, which the API answers with 503 and a sentence that says what to change.
+`app/factory.py` is the one place that reads the settings and chooses the model, the file store and the folder source. A choice that cannot be met (the OpenRouter model without `OPENROUTER_API_KEY` or `LLM_MODEL`, or an empty `INVOICE_FOLDER`) raises `ConfigurationError`, which the API answers with 503 and a sentence that says what to change.
 
 ## Services
 

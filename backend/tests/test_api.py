@@ -141,12 +141,12 @@ def test_read_folder(client: TestClient, tmp_path: Path) -> None:
     }
 
 
-def test_a_model_that_is_not_built_answers_503(client: TestClient) -> None:
+def test_the_real_model_without_a_key_answers_503(client: TestClient) -> None:
     app.dependency_overrides[get_settings] = lambda: make_settings(llm_provider="openrouter")
     files = [("files", ("a.pdf", b"%PDF", "application/pdf"))]
     response = client.post("/ingest/upload", files=files)
     assert response.status_code == 503
-    assert "not available yet" in response.json()["detail"]
+    assert "OPENROUTER_API_KEY is empty" in response.json()["detail"]
 
 
 def test_metrics(demo: TestClient) -> None:
