@@ -5,6 +5,7 @@ import 'package:invoice_agent/app_state.dart';
 import 'package:invoice_agent/files.dart';
 import 'package:invoice_agent/main.dart';
 import 'package:invoice_agent/shell/drop_zone.dart';
+import 'package:invoice_agent/shell/reading_scene.dart';
 import 'package:invoice_agent/shell/sidebar.dart';
 import 'package:invoice_agent/theme/text.dart' as text;
 import 'package:material_ui/material_ui.dart';
@@ -37,14 +38,23 @@ Future<void> open(
   List<Object?>? bodies,
   Map<String, Object?> summary = exportSummaryJson,
   Size size = const Size(1336, 1000),
+  List<Map<String, Object?>>? afterUpload,
+  Map<String, Object?>? uploadResult,
+  SceneTiming timing = SceneTiming.instant,
 }) async {
   text.useGoogleFonts = false;
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final client = fakeBackend(requests: requests, bodies: bodies, exportSummary: summary);
+  final client = fakeBackend(
+    requests: requests,
+    bodies: bodies,
+    exportSummary: summary,
+    invoicesAfterUpload: afterUpload,
+    uploadResult: uploadResult ?? const {'stored': 2, 'skipped': 1, 'failed': [], 'rejected': []},
+  );
   final state = AppState(ApiClient(client: client, baseUrl: 'http://test'));
-  await tester.pumpWidget(InvoiceAgentApp(state: state, files: files));
+  await tester.pumpWidget(InvoiceAgentApp(state: state, files: files, sceneTiming: timing));
   await tester.pumpAndSettle();
   await tester.tap(find.descendant(of: find.byType(Sidebar), matching: find.text(entry)));
   await tester.pumpAndSettle();
@@ -129,6 +139,118 @@ void main() {
     // The list is asked for again, so the new invoices show up.
     expect(requests, contains('GET /invoices'));
     expect(find.text('2 new invoices read. 1 already stored.'), findsOneWidget);
+  });
+
+  group('the reading robot', () {
+    const timing = SceneTiming();
+    final files = FakeFiles(
+      picked: const [
+        InvoiceUpload('atlas-as-0690.pdf', [37, 80, 68, 70]),
+        InvoiceUpload('june.pdf', [1, 2, 3]),
+      ],
+    );
+
+    testWidgets('reads with filling bars, says how sure it is, then the notice', (tester) async {
+      await open(
+        tester,
+        'INVOICES',
+        files: files,
+        timing: timing,
+        afterUpload: [
+          ...invoicesJson,
+          invoiceJson(
+            50,
+            'Atlas Software',
+            'AS-0690',
+            '2026-11-18',
+            '119.00',
+            '143.99',
+            file: 'atlas-as-0690.pdf',
+          ),
+          invoiceJson(
+            51,
+            'Cobalt Office',
+            'CO-1',
+            '2026-11-17',
+            '10.00',
+            '12.10',
+            file: 'june.pdf',
+          ),
+        ],
+      );
+
+      await tester.tap(find.text('ADD FILES'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byType(ReadingScene), findsOneWidget);
+      expect(find.text('AI IS READING…'), findsOneWidget);
+      expect(find.text('2 files'), findsOneWidget);
+      expect(find.text('SUPPLIER'), findsOneWidget);
+      expect(find.byIcon(Icons.check_rounded), findsNothing);
+
+      // The robot reads for a moment even though the backend answered at once.
+      await tester.pump(timing.minReading);
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('READ BY AI · 96% SURE'), findsOneWidget);
+      // Bars that fill up, not the values: the list behind shows those.
+      expect(find.byIcon(Icons.check_rounded), findsNWidgets(4));
+      expect(
+        find.descendant(of: find.byType(ReadingScene), matching: find.text('AS-0690')),
+        findsNothing,
+      );
+      expect(find.text('+1 more read'), findsOneWidget);
+
+      await tester.pump(timing.hold);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(ReadingScene), findsNothing);
+      expect(find.text('2 new invoices read. 1 already stored.'), findsOneWidget);
+    });
+
+    testWidgets('closes without the fields when nothing new was read', (tester) async {
+      await open(
+        tester,
+        'INVOICES',
+        files: files,
+        timing: timing,
+        uploadResult: const {
+          'stored': 0,
+          'skipped': 0,
+          'failed': ['june.pdf'],
+          'rejected': [],
+        },
+      );
+
+      await tester.tap(find.text('ADD FILES'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('AI IS READING…'), findsOneWidget);
+      await tester.pump(timing.minReading);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(ReadingScene), findsNothing);
+      expect(find.text('No new invoices. Could not read june.pdf.'), findsOneWidget);
+    });
+
+    for (final size in const [Size(1180, 820), Size(1000, 600)]) {
+      testWidgets('fits a window of ${size.width.toInt()} x ${size.height.toInt()}', (
+        tester,
+      ) async {
+        text.useGoogleFonts = false;
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ReadingScene(
+                files: 1,
+                timing: SceneTiming.instant,
+                read: Invoice.fromJson(invoicesJson.first),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('READ BY AI · 96% SURE'), findsOneWidget);
+      });
+    }
   });
 
   test('the notice names what was left out', () {

@@ -33,3 +33,21 @@ jobs:
       - run: uv run ruff format --check .
       # The tests need no .env and no services.
       - run: uv run pytest -q
+
+  desktop:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.50.0"
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test integration_test
+      - run: flutter analyze
+      # Widget tests run with a fake backend and the test font, so Linux is enough. The test in
+      # integration_test/ needs the real macOS app and runs on a Mac only.
+      - run: flutter test

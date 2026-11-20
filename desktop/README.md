@@ -15,6 +15,9 @@ flutter run -d macos --dart-define=API_URL=http://127.0.0.1:8000
 ## Checks
 
 ```bash
+dart format --output=none --set-exit-if-changed lib test integration_test
 flutter analyze && flutter test
 flutter test integration_test -d macos   # in the real app
 ```
+
+`dart format` uses a width of 100, set in `analysis_options.yaml`. The CI runs the first two lines on Linux; the real-app test needs a Mac.

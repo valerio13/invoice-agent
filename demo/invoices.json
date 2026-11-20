@@ -660,5 +660,23 @@
       "file": "cobalt-co0354-copy.pdf",
       "copy_of": "cobalt-co0354.pdf"
     }
+  ],
+  "extra": [
+    {
+      "file": "atlas-as-0690.pdf",
+      "supplier": "atlas",
+      "number": "AS-0690",
+      "days_ago": 0,
+      "lines": [
+        [
+          "Accounting suite, 5 seats",
+          "95.00"
+        ],
+        [
+          "Data backup add-on",
+          "24.00"
+        ]
+      ]
+    }
   ]
 }

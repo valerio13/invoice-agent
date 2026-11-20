@@ -1,8 +1,11 @@
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 
-from app.demo.catalog import load_demo_invoices
+from app.demo.catalog import load_demo_invoices, load_extra_invoices
+from app.demo.extra import write_extra_invoices
 from app.demo.render import render_invoice
+from app.domain.models import InvoiceFile
 from app.providers.llm.fake import FakeLLMProvider
 from app.providers.source.demo import DemoSource
 
@@ -59,3 +62,19 @@ def test_the_fake_model_reads_every_demo_invoice() -> None:
     model = FakeLLMProvider(today=lambda: TODAY)
     for file in DemoSource(today=lambda: TODAY).fetch():
         assert model.extract(file).currency == "EUR"
+
+
+def test_the_extra_invoices_stay_out_of_the_demo_set_but_can_be_read(tmp_path: Path) -> None:
+    extra = load_extra_invoices(TODAY)
+    assert extra
+    demo_names = {file.file_name for file in DemoSource(today=lambda: TODAY).fetch()}
+    demo_keys = {(invoice.supplier, invoice.number) for invoice in load_demo_invoices(TODAY)}
+    model = FakeLLMProvider(today=lambda: TODAY)
+    for path in write_extra_invoices(tmp_path, TODAY):
+        invoice = next(item for item in extra if item.file_name == path.name)
+        assert path.name not in demo_names
+        # A new invoice, not a duplicate of one in the demo set.
+        assert (invoice.supplier, invoice.number) not in demo_keys
+        assert path.read_bytes().startswith(b"%PDF")
+        file = InvoiceFile(file_name=path.name, content=path.read_bytes())
+        assert model.extract(file).amounts_add_up()

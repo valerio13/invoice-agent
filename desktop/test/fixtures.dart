@@ -157,51 +157,57 @@ MockClient fakeBackend({
     'failed': [],
     'rejected': [],
   },
-}) => MockClient((request) async {
-  final key = '${request.method} ${request.url.path}';
-  requests?.add(key);
-  final multipart = request.headers['content-type']?.startsWith('multipart/') ?? false;
-  if (multipart) {
-    // The file names sent, in the order of the form.
-    bodies?.add(RegExp(r'filename="([^"]+)"').allMatches(request.body).map((m) => m[1]).toList());
-  } else if (request.body.isNotEmpty) {
-    bodies?.add(jsonDecode(request.body));
-  }
-  if (key == 'GET /export') {
-    return http.Response.bytes(
-      workbookBytes,
-      200,
-      headers: {'content-disposition': 'attachment; filename="invoices-2026-11-18.xlsx"'},
-    );
-  }
-  final list = invoices ?? invoicesJson;
-  final id = int.tryParse(request.url.pathSegments.length > 1 ? request.url.pathSegments[1] : '');
-  if (key.endsWith('/preview')) return http.Response.bytes(onePixelPng, 200);
-  if (request.method == 'PUT' && id != null) {
-    if (reviewError != null) {
-      return http.Response(jsonEncode({'detail': reviewError}), 422);
+  // What GET /invoices answers once files were uploaded. Without it, the list stays the same.
+  List<Map<String, Object?>>? invoicesAfterUpload,
+}) {
+  var uploaded = false;
+  return MockClient((request) async {
+    final key = '${request.method} ${request.url.path}';
+    requests?.add(key);
+    final multipart = request.headers['content-type']?.startsWith('multipart/') ?? false;
+    if (multipart) {
+      // The file names sent, in the order of the form.
+      bodies?.add(RegExp(r'filename="([^"]+)"').allMatches(request.body).map((m) => m[1]).toList());
+    } else if (request.body.isNotEmpty) {
+      bodies?.add(jsonDecode(request.body));
     }
-    final invoice = list.firstWhere((item) => item['id'] == id);
-    return http.Response(jsonEncode({...invoice, 'status': 'ok', 'approved': true}), 200);
-  }
-  if (key.endsWith('/duplicate') && id != null) {
-    final invoice = list.firstWhere((item) => item['id'] == id);
-    return http.Response(jsonEncode({...invoice, 'status': 'duplicate'}), 200);
-  }
-  final body = switch (key) {
-    'GET /health' => {'status': 'ok', 'demo_mode': demoMode},
-    'GET /metrics' => metrics,
-    'GET /invoices' => list,
-    'POST /ingest/demo' => {'stored': 38, 'skipped': 0, 'failed': []},
-    'POST /ingest/upload' => uploadResult,
-    'GET /export/summary' => exportSummary,
-    _ => null,
-  };
-  if (body == null) {
-    return http.Response(jsonEncode({'detail': 'Not found'}), 404);
-  }
-  return http.Response(jsonEncode(body), 200, headers: {'content-type': 'application/json'});
-});
+    if (key == 'GET /export') {
+      return http.Response.bytes(
+        workbookBytes,
+        200,
+        headers: {'content-disposition': 'attachment; filename="invoices-2026-11-18.xlsx"'},
+      );
+    }
+    if (key == 'POST /ingest/upload') uploaded = true;
+    final list = (uploaded ? invoicesAfterUpload : null) ?? invoices ?? invoicesJson;
+    final id = int.tryParse(request.url.pathSegments.length > 1 ? request.url.pathSegments[1] : '');
+    if (key.endsWith('/preview')) return http.Response.bytes(onePixelPng, 200);
+    if (request.method == 'PUT' && id != null) {
+      if (reviewError != null) {
+        return http.Response(jsonEncode({'detail': reviewError}), 422);
+      }
+      final invoice = list.firstWhere((item) => item['id'] == id);
+      return http.Response(jsonEncode({...invoice, 'status': 'ok', 'approved': true}), 200);
+    }
+    if (key.endsWith('/duplicate') && id != null) {
+      final invoice = list.firstWhere((item) => item['id'] == id);
+      return http.Response(jsonEncode({...invoice, 'status': 'duplicate'}), 200);
+    }
+    final body = switch (key) {
+      'GET /health' => {'status': 'ok', 'demo_mode': demoMode},
+      'GET /metrics' => metrics,
+      'GET /invoices' => list,
+      'POST /ingest/demo' => {'stored': 38, 'skipped': 0, 'failed': []},
+      'POST /ingest/upload' => uploadResult,
+      'GET /export/summary' => exportSummary,
+      _ => null,
+    };
+    if (body == null) {
+      return http.Response(jsonEncode({'detail': 'Not found'}), 404);
+    }
+    return http.Response(jsonEncode(body), 200, headers: {'content-type': 'application/json'});
+  });
+}
 
 /// A valid 1 x 1 PNG, for the document preview.
 final onePixelPng = Uint8List.fromList(

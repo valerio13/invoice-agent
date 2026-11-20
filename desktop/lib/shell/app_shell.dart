@@ -12,6 +12,7 @@ import '../screens/review_screen.dart';
 import '../theme/text.dart';
 import '../theme/tokens.dart';
 import 'drop_zone.dart';
+import 'reading_scene.dart';
 import 'sidebar.dart';
 
 /// Smallest size the layout is drawn at. A smaller window scrolls.
@@ -26,10 +27,16 @@ const _entries = [
 
 /// The page background, the app window, the sidebar and the selected screen.
 class AppShell extends StatefulWidget {
-  const AppShell({super.key, required this.state, this.files = const FileAccess()});
+  const AppShell({
+    super.key,
+    required this.state,
+    this.files = const FileAccess(),
+    this.sceneTiming = const SceneTiming(),
+  });
 
   final AppState state;
   final FileAccess files;
+  final SceneTiming sceneTiming;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -70,13 +77,36 @@ class _AppShellState extends State<AppShell> {
     await _addFiles(uploads);
   }
 
+  // What the reading scene shows: how many files, then the invoices just read.
+  int _sceneFiles = 0;
+  List<Invoice> _justRead = const [];
+
   Future<void> _addFiles(List<InvoiceUpload> uploads) async {
     if (uploads.isEmpty || _reading) return;
-    setState(() => _reading = true);
-    final count = uploads.length;
-    _notify('Reading $count ${count == 1 ? 'file' : 'files'}…');
+    final timing = widget.sceneTiming;
+    final before = {for (final invoice in widget.state.invoices) invoice.id};
+    final names = {for (final upload in uploads) upload.name};
+    setState(() {
+      _reading = true;
+      _sceneFiles = uploads.length;
+      _justRead = const [];
+    });
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    final started = DateTime.now();
     final result = await widget.state.addFiles(uploads);
+    // A fast answer still lets the robot read for a moment, so the scene does not flash.
+    final left = timing.minReading - DateTime.now().difference(started);
+    if (left > Duration.zero) await Future<void>.delayed(left);
     if (!mounted) return;
+    final read = [
+      for (final invoice in widget.state.invoices)
+        if (!before.contains(invoice.id) && names.contains(invoice.fileName)) invoice,
+    ];
+    if (read.isNotEmpty) {
+      setState(() => _justRead = read);
+      await Future<void>.delayed(timing.hold);
+      if (!mounted) return;
+    }
     setState(() => _reading = false);
     _notify(
       result == null ? widget.state.error ?? 'The files were not read.' : uploadNotice(result),
@@ -141,7 +171,30 @@ class _AppShellState extends State<AppShell> {
                         height: height,
                         child: Padding(
                           padding: EdgeInsets.all(margin),
-                          child: DropZone(enabled: !_reading, onDrop: _dropFiles, child: _window()),
+                          child: DropZone(
+                            enabled: !_reading,
+                            onDrop: _dropFiles,
+                            child: Stack(
+                              children: [
+                                _window(),
+                                if (_reading)
+                                  Positioned.fill(
+                                    child: ClipRRect(
+                                      borderRadius: const BorderRadius.horizontal(
+                                        left: Radius.circular(AppSizes.rWindow),
+                                        right: Radius.circular(AppSizes.rPanel),
+                                      ),
+                                      child: ReadingScene(
+                                        files: _sceneFiles,
+                                        read: _justRead.firstOrNull,
+                                        moreRead: _justRead.isEmpty ? 0 : _justRead.length - 1,
+                                        timing: widget.sceneTiming,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),

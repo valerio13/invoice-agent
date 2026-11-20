@@ -50,10 +50,22 @@ uv run ruff check . && uv run pytest -q
 
 ## Demo mode
 
-Runs on fictitious invoices and needs no model key (`DEMO_MODE=true`). With the API running, this replaces every invoice with the demo set:
+Runs on fictitious invoices and needs no model key (`DEMO_MODE=true`). With Docker running and a filled-in `.env`, one command starts the database, creates the tables, starts the API in demo mode on port 8000 (`DEMO_PORT` to change it) and opens the desktop app. An empty database gets the demo invoices; one that has invoices keeps them. Closing the app stops the API:
+
+```bash
+scripts/demo.sh
+```
+
+With the API already running, this replaces every invoice with the demo set (the "Load demo" button of the Overview screen does the same):
 
 ```bash
 curl -X POST http://127.0.0.1:8000/ingest/demo
+```
+
+To try adding an invoice by hand, this writes a fictitious one that is not in the demo set but that the stand-in model can read. Then drop it on the app or use "Add files" on the Invoices screen, the same day:
+
+```bash
+cd backend && uv run python -m app.demo.extra ~/Desktop
 ```
 
 ## Security
@@ -62,6 +74,10 @@ curl -X POST http://127.0.0.1:8000/ingest/demo
 - An invoice is untrusted input. The model has no tools and its answer is validated before anything is stored.
 - The agent only reads invoices and writes the workbook.
 - Secrets are scanned with gitleaks on every commit and in CI.
+
+## Continuous integration
+
+On every push GitHub Actions scans the history for secrets, runs the backend lint and tests, and checks the format, lint and widget tests of the desktop app (`.github/workflows/ci.yml`). The real-app test in `desktop/integration_test/` needs a Mac and is run by hand.
 
 ## License
 

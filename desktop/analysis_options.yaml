@@ -9,6 +9,10 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+# dart format uses this width, the same as the backend (ruff, 100).
+formatter:
+  page_width: 100
+
 analyzer:
   exclude:
     - build/**

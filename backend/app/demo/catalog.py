@@ -66,10 +66,19 @@ class DemoInvoice(BaseModel):
 
 def load_demo_invoices(today: date, path: Path = DEMO_FILE) -> list[DemoInvoice]:
     """Return the demo invoices, newest first, with dates counted back from today."""
+    return _load(today, path, "invoices")
+
+
+def load_extra_invoices(today: date, path: Path = DEMO_FILE) -> list[DemoInvoice]:
+    """Return the invoices kept out of the demo set, to add by hand from the app."""
+    return _load(today, path, "extra")
+
+
+def _load(today: date, path: Path, key: str) -> list[DemoInvoice]:
     data = json.loads(path.read_text(encoding="utf-8"))
     suppliers = data["suppliers"]
     invoices: dict[str, DemoInvoice] = {}
-    for entry in data["invoices"]:
+    for entry in data.get(key, []):
         if "copy_of" in entry:
             original = invoices[entry["copy_of"]]
             invoice = original.model_copy(
