@@ -1,7 +1,11 @@
-# Local use only. `docker compose up` loads this file by itself and publishes the database on
-# 127.0.0.1:5433, so the backend can reach it when it runs with uv. Port 5433 and not 5432, so it
-# does not clash with another PostgreSQL on the machine.
+# Local use only. `docker compose up` loads this file by itself and publishes the ports on
+# 127.0.0.1: the database on 5433, so the backend can also run with uv, and the API on 8000
+# (API_PORT to change it), which the desktop app calls. Port 5433 and not 5432, so it does not
+# clash with another PostgreSQL on the machine.
 services:
   db:
     ports:
       - "127.0.0.1:5433:5432"
+  api:
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"

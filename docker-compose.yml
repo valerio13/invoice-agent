@@ -1,6 +1,25 @@
-# PostgreSQL for the backend. Nothing is published to the host here.
-# docker-compose.override.yml adds the local port.
+# The backend API and PostgreSQL. Nothing is published to the host here.
+# docker-compose.override.yml adds the local ports.
 services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Inside Docker the database is the db service, not the port published on the host.
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      LLM_PROVIDER: ${LLM_PROVIDER:-fake}
+      LLM_MODEL: ${LLM_MODEL:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      DEMO_MODE: ${DEMO_MODE:-true}
+    volumes:
+      - files:/app/data/files
+
+
   db:
     image: postgres:16
     restart: unless-stopped
@@ -18,3 +37,5 @@ services:
 
 volumes:
   pgdata:
+  # The copy of each document, shown on the review screen.
+  files:

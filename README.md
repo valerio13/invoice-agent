@@ -2,7 +2,7 @@
 
 Reads invoices (PDF and images), extracts supplier, date, number, net amount, VAT, total and currency, and exports them to an Excel workbook. Invoices it is not sure about, totals that do not add up and duplicates are flagged for a human, who reviews them in a desktop app with the document next to its extracted fields.
 
-Status: in progress. Built so far: the settings, the domain models, the database layer, the invoice sources, the demo invoices, a stand-in for the model and the real one through OpenRouter, the services (reading, checks, review, Excel export and metrics), the REST API and the desktop app (Overview, Invoices, Review and Export, and adding invoices by dropping them on the window), with tests. The rest of the design is the plan and is updated as each part is built.
+Status: in progress. Built so far: the settings, the domain models, the database layer, the invoice sources, the demo invoices, a stand-in for the model and the real one through OpenRouter, the services (reading, checks, review, Excel export and metrics), the REST API, the desktop app (Overview, Invoices, Review and Export, and adding invoices by dropping them on the window) and Docker Compose for the API and the database, with tests. The rest of the design is the plan and is updated as each part is built.
 
 ## Architecture
 
@@ -28,6 +28,16 @@ uv run alembic upgrade head     # create the tables
 ```bash
 cd backend && uv run fastapi dev   # http://127.0.0.1:8000, docs at /docs
 ```
+
+## Run with Docker
+
+The API and the database in containers, with no Python on the machine. With a filled-in `.env`:
+
+```bash
+docker compose up -d --build    # API on http://127.0.0.1:8000, database on 127.0.0.1:5433
+```
+
+The API creates the tables on start. Set `API_PORT` in `.env` if port 8000 is taken, and start the desktop app with `--dart-define=API_URL=http://127.0.0.1:<port>`.
 
 ## Desktop app
 

@@ -77,6 +77,10 @@ Built.
 - `migrations/`: Alembic migrations, written by hand. Apply them with `uv run alembic upgrade head`, or print the SQL without connecting with `uv run alembic upgrade head --sql`.
 - A test applies the migrations to an empty database and compares the result with the models, so a column added to one and not to the other fails the build.
 
+## Running in Docker
+
+Built. `docker-compose.yml` runs two services: `db` (PostgreSQL 16 with a healthcheck) and `api`, built from `backend/Dockerfile` (Python 3.12 slim, dependencies installed with uv from `uv.lock`, a non-root user). The API waits for a healthy database, applies the migrations and serves on port 8000. Inside Docker it reaches the database as `db`, so compose sets its own `DATABASE_URL` from the `POSTGRES_*` values. Two volumes keep the data: `pgdata` for the database and `files` for the copy of each document. Nothing is published to the host in that file: `docker-compose.override.yml` publishes the database on `127.0.0.1:5433` and the API on `127.0.0.1:8000` (`API_PORT` to change it). `.dockerignore` keeps `.env`, `.git` and the desktop app out of the build context, so no secret is baked into the image; the key reaches the container only as an environment variable at run time.
+
 ## Settings
 
 Built. `backend/app/core/config.py` reads typed settings from environment variables and the `.env` file at the project root: `DATABASE_URL`, `LLM_PROVIDER`, `LLM_MODEL`, `OPENROUTER_API_KEY`, `DEMO_MODE`, `INVOICE_FOLDER` (the folder read on request) and `FILES_DIR` (where documents are kept, `data/files` by default). Secrets are `SecretStr`, so they never show in logs.
