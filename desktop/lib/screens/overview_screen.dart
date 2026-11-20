@@ -26,7 +26,7 @@ class OverviewScreen extends StatelessWidget {
     final metrics = state.metrics;
     if (metrics == null) {
       return _Message(
-        text: state.error ?? 'Loading…',
+        text: state.error ?? 'Loading\u2026',
         action: state.error == null
             ? null
             : AppButton(label: 'Try again', kind: ButtonKind.primary, onPressed: state.refresh),

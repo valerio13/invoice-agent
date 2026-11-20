@@ -59,7 +59,9 @@ class _ExportScreenState extends State<ExportScreen> {
     if (summary == null) {
       return AppCard(
         radius: AppSizes.rRow,
-        child: Center(child: Text(widget.state.error ?? 'Loading…', style: AppText.body(size: 13))),
+        child: Center(
+          child: Text(widget.state.error ?? 'Loading\u2026', style: AppText.body(size: 13)),
+        ),
       );
     }
     final sheets = summary.sheets.length;
@@ -187,7 +189,7 @@ class _ExportScreenState extends State<ExportScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 AppButton(
-                  label: _saving ? 'Saving…' : 'Save Excel',
+                  label: _saving ? 'Saving\u2026' : 'Save Excel',
                   kind: ButtonKind.primary,
                   icon: Icons.download_rounded,
                   expand: true,
