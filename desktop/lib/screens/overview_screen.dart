@@ -362,9 +362,8 @@ class _SuppliersPanel extends StatelessWidget {
                     Expanded(
                       child: Text(
                         '${metrics.needsReview} ${metrics.needsReview == 1 ? 'invoice' : 'invoices'}',
-                        style: AppText.figure(
-                          color: AppColors.onInk,
-                        ).copyWith(fontWeight: FontWeight.w500),
+                        style: AppText.figure(color: AppColors.onInk)
+                            .copyWith(fontWeight: FontWeight.w500),
                       ),
                     ),
                     AppButton(

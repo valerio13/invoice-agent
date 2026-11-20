@@ -249,9 +249,8 @@ class _SheetRow extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 caption,
-                style: AppText.body(
-                  color: end ? AppColors.accent : AppColors.text,
-                ).copyWith(letterSpacing: 0.5),
+                style: AppText.body(color: end ? AppColors.accent : AppColors.text)
+                    .copyWith(letterSpacing: 0.5),
               ),
             ],
           ),
